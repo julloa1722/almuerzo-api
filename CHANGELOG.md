@@ -1,5 +1,38 @@
 # CHANGELOG
 
+## Control de versiones real: el proyecto pasa a git y GitHub (16 de septiembre de 2026)
+
+Git sí está instalado en esta máquina ahora
+(`C:\Users\juan.ulloa\AppData\Local\MinGit`, versión 2.55.0) — el
+bloqueo documentado en el Sprint 9 y repetido en `CLAUDE.md` ya no
+aplica. El proyecto se inicializó como repositorio git (rama `main`,
+commit inicial con 169 archivos) con destino
+`https://github.com/julloa1722/FreeEat`.
+
+**Bug real encontrado al preparar la subida:** el snapshot
+`versiones/sprint-19-2026-08-06.zip` contenía un `.env` real —
+cadenas de conexión de Neon y `JWT_SECRET` — pese a que
+`versiones/README.md` dice desde siempre que los snapshots se toman
+"sin `node_modules`, `dist`, ni `.env`". Los otros 6 snapshots están
+limpios; fue un fallo del armado a mano de ese `.zip` en particular
+(no hay script de snapshot en `scripts/`, se hacían con
+`Compress-Archive` ad hoc). Se eliminó esa entrada del `.zip` **antes**
+del primer commit, así que las credenciales nunca llegaron al historial
+de git ni a GitHub y no hace falta rotarlas. El `.zip` sigue sirviendo
+para restaurar: el paso de crear `.env` a partir de `.env.example` ya
+era parte del procedimiento documentado.
+
+`.gitignore` endurecido en el mismo paso: se agregaron
+`.claude/settings.local.json` (permisos locales de esta máquina),
+`*.tsbuildinfo` y `.env.*.local`. Verificado antes de commitear que
+ningún `node_modules`, `dist` ni `.env` quedara dentro, y que los dos
+`.env.example` no compartan ningún valor real con el `.env` (la única
+coincidencia es `NODE_ENV=development`).
+
+De aquí en adelante el historial vive en git. Los snapshots de
+`versiones/` se conservan como archivo histórico, pero ya no hace falta
+generar uno nuevo por sprint.
+
 ## Limpieza de datos de prueba del Sprint 15 (6 de agosto de 2026)
 
 A pedido explícito del usuario: se borraron de la base real (Neon) los

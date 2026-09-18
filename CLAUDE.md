@@ -111,12 +111,19 @@ escribir este archivo, Sprints 1–9 confirmados por el usuario (Sprint 8 con
 alcance recortado a solo el backend de contenido de ayuda — el tour visual
 y el centro de ayuda quedaron diferidos hasta que exista un frontend). El
 subsprint 9.4 (despliegue real a Render) sigue pendiente — preparado
-(`render.yaml` + guía) pero **no ejecutado**: git no está instalado en esta
-máquina y esta sesión no pudo instalarlo (el entorno de ejecución bloquea
-descargas de binarios; ver plan-sprints.md, Sprint 9). Mientras tanto, el
-proyecto lleva su historial en `CHANGELOG.md` y snapshots restaurables en
-`versiones/` en vez de git — mantén ambos al día en cada cambio
-significativo, hasta que exista git de verdad.
+(`render.yaml` + guía) pero **no ejecutado**. Lo que lo bloqueaba era la
+falta de git; ahora que el código está en GitHub, Render ya puede conectarse
+al repositorio. No lo construyas sin pedirlo antes, mismo criterio de
+siempre.
+
+**Control de versiones (actualizado el 16 de septiembre de 2026):** git sí
+está instalado ahora (MinGit 2.55, en `%LOCALAPPDATA%\MinGit`) y el proyecto
+es un repositorio git de verdad — rama `main`, con destino
+`https://github.com/julloa1722/FreeEat`. El historial va en git; usa commits
+normales. `CHANGELOG.md` se mantiene al día igual que antes (es la bitácora
+narrativa del proyecto, más legible que `git log`), pero `versiones/` **ya no
+se alimenta**: los `.zip` quedan como archivo histórico y no hay que
+generar uno nuevo por sprint.
 
 El **Sprint 10 (frontend, rol colaborador) está ✅ confirmado** (31 de
 julio de 2026, probado por el usuario con clics reales en

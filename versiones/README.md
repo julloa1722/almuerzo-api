@@ -1,8 +1,22 @@
-# versiones/ — snapshots restaurables sin git
+# versiones/ — snapshots restaurables (archivo histórico)
 
-Mientras el proyecto no tiene control de versiones real (git no se pudo
-instalar en esta máquina desde esta sesión — ver `plan-sprints.md`, Sprint
-9), cada sprint confirmado deja aquí un `.zip` con el código completo en
+> **Actualización del 16 de septiembre de 2026 — esta carpeta ya no se
+> alimenta.** Git sí está instalado ahora y el proyecto tiene control de
+> versiones real (`main`, con destino
+> `https://github.com/julloa1722/FreeEat`). Los `.zip` de abajo se
+> conservan como archivo histórico de los Sprints 9–19, pero **ya no hay
+> que generar uno nuevo por sprint**: eso lo cubre git. Ver `CHANGELOG.md`.
+>
+> Al preparar la subida a GitHub se encontró que
+> `sprint-19-2026-08-06.zip` contenía un `.env` real (credenciales de
+> Neon y `JWT_SECRET`), contradiciendo lo que este mismo archivo dice dos
+> párrafos más abajo. Se eliminó esa entrada del `.zip` antes del primer
+> commit, así que nunca llegó al historial de git. Los otros 6 snapshots
+> estaban limpios.
+
+Mientras el proyecto no tuvo control de versiones real (git no se pudo
+instalar en esta máquina en aquel momento — ver `plan-sprints.md`, Sprint
+9), cada sprint confirmado dejó aquí un `.zip` con el código completo en
 ese punto (sin `node_modules`, `dist`, ni `.env` — igual que excluiría
 `.gitignore`).
 

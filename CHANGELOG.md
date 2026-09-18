@@ -7,7 +7,7 @@ Git sí está instalado en esta máquina ahora
 bloqueo documentado en el Sprint 9 y repetido en `CLAUDE.md` ya no
 aplica. El proyecto se inicializó como repositorio git (rama `main`,
 commit inicial con 169 archivos) con destino
-`https://github.com/julloa1722/FreeEat`.
+`https://github.com/julloa1722/almuerzo-api`.
 
 **Bug real encontrado al preparar la subida:** el snapshot
 `versiones/sprint-19-2026-08-06.zip` contenía un `.env` real —

@@ -3,7 +3,7 @@
 > **Actualización del 16 de septiembre de 2026 — esta carpeta ya no se
 > alimenta.** Git sí está instalado ahora y el proyecto tiene control de
 > versiones real (`main`, con destino
-> `https://github.com/julloa1722/FreeEat`). Los `.zip` de abajo se
+> `https://github.com/julloa1722/almuerzo-api`). Los `.zip` de abajo se
 > conservan como archivo histórico de los Sprints 9–19, pero **ya no hay
 > que generar uno nuevo por sprint**: eso lo cubre git. Ver `CHANGELOG.md`.
 >

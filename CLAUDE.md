@@ -119,9 +119,10 @@ siempre.
 **Control de versiones (actualizado el 16 de septiembre de 2026):** git sí
 está instalado ahora (MinGit 2.55, en `%LOCALAPPDATA%\MinGit`) y el proyecto
 es un repositorio git de verdad — rama `main`, con destino
-`https://github.com/julloa1722/FreeEat`. El historial va en git; usa commits
-normales. `CHANGELOG.md` se mantiene al día igual que antes (es la bitácora
-narrativa del proyecto, más legible que `git log`), pero `versiones/` **ya no
+`https://github.com/julloa1722/almuerzo-api`. El historial va en git; usa
+commits normales. `CHANGELOG.md` se mantiene al día igual que antes (es la
+bitácora narrativa del proyecto, más legible que `git log`), pero
+`versiones/` **ya no
 se alimenta**: los `.zip` quedan como archivo histórico y no hay que
 generar uno nuevo por sprint.
 

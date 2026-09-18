@@ -1,0 +1,21 @@
+node_modules/
+dist/
+
+# Nunca committear credenciales reales — usa .env.example como plantilla.
+.env
+.env.local
+.env.*.local
+
+*.log
+npm-debug.log*
+*.tsbuildinfo
+
+.vscode/
+.idea/
+*.swp
+
+# Permisos locales de Claude Code — son de esta máquina, no del proyecto.
+.claude/settings.local.json
+
+.DS_Store
+Thumbs.db

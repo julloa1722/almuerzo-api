@@ -1,0 +1,32 @@
+version: "3.9"
+
+# Opcional. El camino recomendado para desarrollo es Neon (ver README, sección 2) —
+# esto solo hace falta si prefieres Postgres local en Docker, o si quieres correr
+# Redis localmente para adelantarte al sprint de pedidos.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: almuerzo
+      POSTGRES_PASSWORD: almuerzo_dev
+      POSTGRES_DB: almuerzo
+    ports:
+      - "5432:5432"
+    volumes:
+      - almuerzo_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U almuerzo -d almuerzo"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+volumes:
+  almuerzo_db_data:

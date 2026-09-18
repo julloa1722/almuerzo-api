@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mono {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Componentes portados de mockup-plataforma-almuerzo.html ---------- */
+
+@layer components {
+  .card {
+    @apply bg-card border border-rule rounded p-[18px];
+  }
+
+  .btn {
+    @apply border border-ink bg-ink text-white px-3.5 py-2 rounded text-[13.5px] font-medium transition-opacity;
+  }
+  .btn:hover {
+    @apply opacity-85;
+  }
+  .btn:disabled {
+    @apply opacity-35 cursor-not-allowed;
+  }
+  .btn-sec {
+    @apply bg-transparent text-ink border-rule;
+  }
+  .btn-sec:hover {
+    @apply bg-paper opacity-100;
+  }
+  .btn-ok {
+    @apply bg-verde border-verde;
+  }
+  .btn-dan {
+    @apply bg-transparent text-granate border-[#E0BDBD];
+  }
+  .btn-sm {
+    @apply px-2.5 py-1 text-[12.5px];
+  }
+
+  .est {
+    @apply inline-block font-mono text-[10.5px] font-medium tracking-wide px-1.5 py-0.5 rounded-[3px] border;
+  }
+  .e-CANCELADO {
+    @apply bg-rule-2 text-muted border-rule;
+  }
+  .e-CONFIRMADO {
+    @apply bg-azul-bg text-azul border-[#BBD0E3];
+  }
+  .e-EN_PREPARACION,
+  .e-ENTREGADO {
+    @apply bg-ambar-bg text-ambar border-[#EBD3A5];
+  }
+  .e-RECIBIDO {
+    @apply bg-verde-bg text-verde border-[#BCD8C9];
+  }
+  .e-DISPUTA,
+  .e-NO_ENTREGADO {
+    @apply bg-granate-bg text-granate border-[#E5C2C2];
+  }
+
+  .aviso {
+    @apply text-[12.5px] px-[11px] py-[9px] rounded my-2.5 leading-relaxed border-l-[3px];
+  }
+  .aviso-no {
+    @apply bg-granate-bg border-granate text-[#6E1F1F];
+  }
+  .aviso-si {
+    @apply bg-verde-bg border-verde text-[#1E4A36];
+  }
+  .aviso-at {
+    @apply bg-ambar-bg border-ambar text-[#6E4403];
+  }
+
+  .plato {
+    @apply border border-rule rounded p-[9px] mb-[9px] flex gap-[11px] items-center transition-colors cursor-pointer;
+  }
+  .plato:hover {
+    @apply border-ink-3;
+  }
+  .plato-sel {
+    @apply border-verde bg-verde-bg;
+  }
+  .plato-ago {
+    @apply opacity-40 cursor-not-allowed;
+  }
+
+  .desglose {
+    @apply bg-paper border border-rule rounded p-3 my-3;
+  }
+
+  .medidor {
+    @apply h-[5px] bg-rule-2 rounded-[3px] overflow-hidden mt-[5px];
+  }
+
+  .campo input,
+  .campo select,
+  .campo textarea {
+    @apply w-full px-2.5 py-[7px] border border-rule rounded bg-paper;
+  }
+  .campo input:focus,
+  .campo select:focus,
+  .campo textarea:focus {
+    @apply border-ink-3 bg-white outline-none;
+  }
+
+  .subnav {
+    @apply flex gap-1 flex-wrap mb-4 border-b border-rule;
+  }
+  .subnav button {
+    @apply bg-transparent border-0 border-b-2 border-transparent px-3 py-2 text-[13.5px] font-medium text-muted;
+  }
+  .subnav button[aria-current='true'] {
+    @apply text-ink border-b-ambar font-semibold;
+  }
+
+  .est-dia {
+    @apply inline-block font-mono text-[10.5px] font-medium tracking-wide px-1.5 py-0.5 rounded-[3px] border;
+  }
+  .est-dia-SIN_PUBLICAR,
+  .est-dia-INACTIVO {
+    @apply bg-rule-2 text-muted border-rule;
+  }
+  .est-dia-PUBLICADO {
+    @apply bg-azul-bg text-azul border-[#BBD0E3];
+  }
+  .est-dia-CONGELADO {
+    @apply bg-granate-bg text-granate border-[#E5C2C2];
+  }
+  .est-dia-ACTIVO {
+    @apply bg-verde-bg text-verde border-[#BCD8C9];
+  }
+}

@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portal del suplidor — catálogo y menú</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#161D26; --ink-2:#232D3B; --ink-3:#3A4757;
+  --paper:#F7F6F2; --card:#FFFFFF; --rule:#DCD8CE; --rule-2:#EAE7E0; --muted:#6B6A63;
+  --verde:#2D6A4F; --verde-bg:#E6EFEA;
+  --ambar:#B06C05; --ambar-bg:#FBF0DC;
+  --granate:#9B2C2C; --granate-bg:#F8E9E9;
+  --azul:#1F4E79; --azul-bg:#E7EEF5;
+  --r:6px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.mono{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--ambar);outline-offset:2px}
+
+.reloj{position:sticky;top:0;z-index:50;background:var(--ink);color:#EDEAE3;border-bottom:3px solid var(--ambar)}
+.reloj-in{max-width:1240px;margin:0 auto;padding:14px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:20px}
+.reloj-marca{font-weight:600;font-size:14px;color:#9BA6B4;white-space:nowrap}
+.reloj-marca b{color:#EDEAE3;display:block;font-size:15px}
+.reloj-hora{display:flex;align-items:baseline;gap:12px;flex:1;min-width:200px}
+.reloj-hora .fecha{font-size:13px;color:#9BA6B4;text-transform:capitalize}
+.reloj-hora .hh{font-family:"IBM Plex Mono",monospace;font-size:28px;font-weight:500;letter-spacing:-.02em}
+.reloj-btns{display:flex;flex-wrap:wrap;gap:6px}
+.reloj-btns button{background:var(--ink-2);border:1px solid var(--ink-3);color:#DDD8CF;padding:6px 11px;border-radius:var(--r);font-size:13px;font-weight:500}
+.reloj-btns button:hover{background:var(--ink-3)}
+.reloj-btns button.salto{background:var(--ambar);border-color:var(--ambar);color:#231703}
+.reloj-btns button.reset{background:transparent;border-color:var(--ink-3);color:#8F9AA8}
+.tiras{max-width:1240px;margin:0 auto;padding:0 20px 12px;display:flex;flex-wrap:wrap;gap:8px}
+.tira{font-size:12.5px;background:var(--ink-2);border:1px solid var(--ink-3);padding:4px 10px;border-radius:20px;color:#B9C2CE}
+.tira b{color:#EDEAE3}
+.tira.urg{background:#3A2A08;border-color:#6B4E0C;color:#F0C97A}
+.tira.urg b{color:#FBD98C}
+
+nav{background:var(--card);border-bottom:1px solid var(--rule);position:sticky;top:0;z-index:40}
+.nav-in{max-width:1240px;margin:0 auto;padding:0 20px;display:flex;gap:2px;overflow-x:auto}
+nav button{background:none;border:none;border-bottom:3px solid transparent;padding:13px 15px;font-size:14px;font-weight:500;color:var(--muted);white-space:nowrap}
+nav button:hover{color:var(--ink)}
+nav button[aria-current="true"]{color:var(--ink);border-bottom-color:var(--ambar);font-weight:600}
+
+main{max-width:1240px;margin:0 auto;padding:24px 20px 80px}
+h2{font-size:19px;font-weight:600;letter-spacing:-.015em;margin:0 0 4px}
+h3{font-size:14px;font-weight:600;margin:0 0 12px}
+.sub{color:var(--muted);font-size:13.5px;margin:0 0 20px;max-width:70ch}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:var(--r);padding:18px}
+.card h3{padding-bottom:9px;border-bottom:1px solid var(--rule-2)}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+.campo{margin-bottom:14px}
+.campo:last-child{margin-bottom:0}
+.campo label{display:block;font-size:12.5px;font-weight:500;margin-bottom:5px}
+.campo .hint{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+.campo input,.campo select,.campo textarea{width:100%;padding:7px 9px;border:1px solid var(--rule);border-radius:4px;background:var(--paper)}
+.campo textarea{resize:vertical;min-height:52px}
+.campo input[type=number]{font-family:"IBM Plex Mono",monospace}
+.fila{display:flex;gap:10px}
+.fila>*{flex:1}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--rule);background:var(--paper);padding:4px 10px;border-radius:20px;font-size:12px;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+
+.btn{border:1px solid var(--ink);background:var(--ink);color:#fff;padding:8px 14px;border-radius:var(--r);font-size:13.5px;font-weight:500}
+.btn:hover{opacity:.85}
+.btn.sec{background:transparent;color:var(--ink);border-color:var(--rule)}
+.btn.sec:hover{background:var(--paper);opacity:1}
+.btn.ok{background:var(--verde);border-color:var(--verde)}
+.btn.dan{background:transparent;color:var(--granate);border-color:#E0BDBD}
+.btn.sm{padding:5px 10px;font-size:12.5px}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+
+.est{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:500;letter-spacing:.05em;padding:2px 7px;border-radius:3px;border:1px solid}
+.e-SIN_PUBLICAR{background:var(--rule-2);color:var(--muted);border-color:var(--rule)}
+.e-PUBLICADO{background:var(--azul-bg);color:var(--azul);border-color:#BBD0E3}
+.e-CONGELADO{background:var(--granate-bg);color:var(--granate);border-color:#E5C2C2}
+.e-ACTIVO{background:var(--verde-bg);color:var(--verde);border-color:#BCD8C9}
+.e-INACTIVO{background:var(--rule-2);color:var(--muted);border-color:var(--rule)}
+
+/* Catálogo */
+.prod{border:1px solid var(--rule);border-radius:var(--r);padding:12px;display:flex;gap:12px;margin-bottom:10px;align-items:flex-start}
+.prod.inactivo{opacity:.5}
+.foto{width:64px;height:64px;border-radius:5px;flex:none;display:flex;align-items:center;justify-content:center;font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;color:#fff;overflow:hidden;position:relative;background-size:cover;background-position:center}
+.foto label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.0);cursor:pointer;font-size:9px;color:transparent}
+.foto:hover label{background:rgba(0,0,0,.45);color:#fff}
+.foto input{display:none}
+.prod .info{flex:1;min-width:0}
+.prod .nm{font-weight:500;font-size:14px}
+.prod .dt{font-size:12px;color:var(--muted);margin:2px 0 6px}
+.prod .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11.5px;color:var(--muted)}
+.prod .pr{font-family:"IBM Plex Mono",monospace;font-weight:500;white-space:nowrap}
+
+/* Plantilla semanal */
+.tabla-plan{width:100%;border-collapse:collapse;font-size:13px}
+.tabla-plan th{text-align:left;font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 8px 8px 0;border-bottom:1px solid var(--rule)}
+.tabla-plan td{padding:8px 8px 8px 0;border-bottom:1px solid var(--rule-2);vertical-align:top}
+.itemplan{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:12.5px}
+.itemplan input[type=checkbox]{flex:none}
+.itemplan .n{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.itemplan input[type=number]{width:58px;padding:3px 5px;font-size:12px;border:1px solid var(--rule);border-radius:3px;background:var(--paper)}
+
+/* Calendario */
+.cal{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.dia{border:1px solid var(--rule);border-radius:var(--r);padding:10px;cursor:pointer;transition:border-color .15s}
+.dia:hover{border-color:var(--ink-3)}
+.dia.sel{border-color:var(--ink);background:var(--paper)}
+.dia .f{font-weight:500;font-size:13px;text-transform:capitalize}
+.dia .n{font-size:11px;color:var(--muted);margin:2px 0 6px}
+.dia .cta{font-size:11.5px;color:var(--muted)}
+
+.desglose{background:var(--paper);border:1px solid var(--rule);border-radius:var(--r);padding:12px;margin:10px 0}
+.dl{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+.dl .v{font-family:"IBM Plex Mono",monospace}
+.dl.tot{border-top:1px solid var(--rule);margin-top:6px;padding-top:7px;font-weight:600}
+.aviso{font-size:12.5px;padding:9px 11px;border-radius:4px;margin:10px 0;line-height:1.45;border-left:3px solid}
+.aviso.at{background:var(--ambar-bg);border-color:var(--ambar);color:#6E4403}
+.aviso.no{background:var(--granate-bg);border-color:var(--granate);color:#6E1F1F}
+.aviso.si{background:var(--verde-bg);border-color:var(--verde);color:#1E4A36}
+.vacio{color:var(--muted);font-size:13px;padding:22px 0;text-align:center}
+.kv{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--rule-2)}
+.kv:last-child{border-bottom:none}
+.kv .v{font-family:"IBM Plex Mono",monospace;font-weight:500}
+table.simple{width:100%;border-collapse:collapse;font-size:13px}
+table.simple th{text-align:left;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 8px 7px 0;border-bottom:1px solid var(--rule)}
+table.simple td{padding:8px 8px 8px 0;border-bottom:1px solid var(--rule-2)}
+.num{text-align:right;font-family:"IBM Plex Mono",monospace}
+th.num{padding-right:0}
+</style>
+</head>
+<body>
+
+<div class="reloj">
+  <div class="reloj-in">
+    <div class="reloj-marca">Portal del suplidor<b>Cocina Criolla del Este</b></div>
+    <div class="reloj-hora"><div>
+      <div class="fecha" id="rFecha">—</div>
+      <div class="hh" id="rHora">—</div>
+    </div></div>
+    <div class="reloj-btns">
+      <button onclick="avanzar(60)">+1 h</button>
+      <button onclick="avanzar(60*8)">+8 h</button>
+      <button onclick="avanzar(60*24)">+1 día</button>
+      <button class="salto" onclick="irCutoffSeleccion()">Ir al cutoff del día activo</button>
+      <button class="reset" onclick="reiniciar()">Reiniciar</button>
+    </div>
+  </div>
+  <div class="tiras" id="rTiras"></div>
+</div>
+
+<nav><div class="nav-in" id="nav"></div></nav>
+<main id="app"></main>
+
+<script>
+/* ============================================================
+   DATOS BASE
+   ============================================================ */
+const INICIO = new Date(2026,6,27,7,30,0);
+const FERIADOS = ['2026-08-16','2026-09-24','2026-11-06','2026-12-25'];
+const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const NOM_DIA = {1:'lunes',2:'martes',3:'miércoles',4:'jueves',5:'viernes'};
+
+const PUNTOS = [
+  {id:1, nombre:'Torre corporativa · piso 4'},
+  {id:2, nombre:'Centro de operaciones · Los Alcarrizos'}
+];
+
+const RUTA = { horaCutoff:'10:00', diasAnticipacion:0, horaEntrega:'12:30', puntos:[1,2] };
+
+const EMPRESAS_CONTRATO = [
+  {id:1, nombre:'Futuro ARS', ajustePct:0},
+  {id:2, nombre:'Grupo Vantia', ajustePct:-7.5}
+];
+
+const ETIQUETAS = ['vegetariano','sin gluten','picante','bajo en sodio'];
+const COLORES = ['#2D6A4F','#B06C05','#1F4E79','#9B2C2C','#534AB7','#993556'];
+
+function estadoInicial(){
+  return {
+    reloj:new Date(INICIO),
+    vista:'catalogo',
+    catalogo:[
+      {id:1, nombre:'Bandeja del día', desc:'Arroz, habichuelas, carne guisada, ensalada', categoria:'Plato fuerte', etiquetas:[], precioBase:320, cupoBase:8, estado:'ACTIVO', imagen:null},
+      {id:2, nombre:'Sancocho con arroz blanco', desc:'Res y víveres', categoria:'Plato fuerte', etiquetas:[], precioBase:380, cupoBase:5, estado:'ACTIVO', imagen:null},
+      {id:3, nombre:'Pechuga a la plancha', desc:'Puré de auyama y vegetales al vapor', categoria:'Plato fuerte', etiquetas:['sin gluten'], precioBase:350, cupoBase:8, estado:'ACTIVO', imagen:null},
+      {id:4, nombre:'Moro de guandules con chuleta', desc:'Ensalada verde incluida', categoria:'Plato fuerte', etiquetas:[], precioBase:335, cupoBase:6, estado:'ACTIVO', imagen:null},
+      {id:5, nombre:'Bowl vegetariano', desc:'Quinoa, garbanzos, aguacate', categoria:'Vegetariano', etiquetas:['vegetariano','sin gluten'], precioBase:310, cupoBase:6, estado:'ACTIVO', imagen:null},
+      {id:6, nombre:'Sopa del día con pan', desc:'Porción individual', categoria:'Ligero', etiquetas:[], precioBase:240, cupoBase:10, estado:'INACTIVO', imagen:null}
+    ],
+    plantilla:{
+      1:{ // semana tipo 1
+        1:{1:{precio:320,cupo:8},2:{precio:335,cupo:6},5:{precio:310,cupo:6}},
+        2:{1:{precio:320,cupo:8},3:{precio:350,cupo:8},5:{precio:310,cupo:6}},
+        3:{2:{precio:380,cupo:5},3:{precio:350,cupo:8}},
+        4:{1:{precio:320,cupo:8},4:{precio:335,cupo:6}},
+        5:{2:{precio:380,cupo:5},3:{precio:350,cupo:8},5:{precio:310,cupo:6}}
+      },
+      2:{ // semana tipo 2, rotación distinta
+        1:{3:{precio:350,cupo:8},4:{precio:335,cupo:6}},
+        2:{1:{precio:320,cupo:8},5:{precio:310,cupo:6}},
+        3:{2:{precio:380,cupo:5},4:{precio:335,cupo:6}},
+        4:{3:{precio:350,cupo:8},5:{precio:310,cupo:6}},
+        5:{1:{precio:320,cupo:8},2:{precio:380,cupo:5}}
+      }
+    },
+    menuDia:{},
+    diaSel:null,
+    seq:{p:100}
+  };
+}
+let S = estadoInicial();
+
+/* ============================================================
+   UTILIDADES DE FECHA
+   ============================================================ */
+function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function fechaDe(s){const[a,m,d]=s.split('-').map(Number);return new Date(a,m-1,d)}
+function fmtFecha(s){const d=fechaDe(s);return DIAS[d.getDay()]+' '+d.getDate()+' '+MESES[d.getMonth()]}
+function fmtCorto(s){const d=fechaDe(s);return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')}
+function fmtHora(d){return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function $(n){return n.toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function hm(s){const[h,m]=s.split(':').map(Number);return{h,m}}
+function esHabil(d){return d.getDay()>=1 && d.getDay()<=5 && !FERIADOS.includes(iso(d))}
+
+function cutoffDe(fechaISO){
+  const d=fechaDe(fechaISO);
+  let n=RUTA.diasAnticipacion;
+  while(n>0){ d.setDate(d.getDate()-1); if(esHabil(d)) n--; }
+  const {h,m}=hm(RUTA.horaCutoff);
+  d.setHours(h,m,0,0);
+  return d;
+}
+
+function numSemanaISO(d){
+  const t=new Date(d); t.setHours(0,0,0,0);
+  t.setDate(t.getDate()+3-((t.getDay()+6)%7));
+  const w1=new Date(t.getFullYear(),0,4);
+  return 1+Math.round(((t-w1)/86400000-3+((w1.getDay()+6)%7))/7);
+}
+function semanaTipoDe(fechaISO){
+  return (numSemanaISO(fechaDe(fechaISO))%2===0) ? 2 : 1;
+}
+
+function proximosHabiles(n){
+  const out=[]; const d=new Date(S.reloj); d.setHours(0,0,0,0);
+  for(let i=0;i<28 && out.length<n;i++){
+    if(esHabil(d)) out.push(iso(d));
+    d.setDate(d.getDate()+1);
+  }
+  return out;
+}
+
+function estadoFecha(fechaISO){
+  if(!S.menuDia[fechaISO]) return 'SIN_PUBLICAR';
+  return S.reloj >= cutoffDe(fechaISO) ? 'CONGELADO' : 'PUBLICADO';
+}
+
+/* ============================================================
+   ACCIONES — catálogo
+   ============================================================ */
+function actualizarProducto(id, campo, valor){
+  const p=S.catalogo.find(x=>x.id===id);
+  p[campo]=valor;
+  render();
+}
+function toggleEtiqueta(id, et){
+  const p=S.catalogo.find(x=>x.id===id);
+  const i=p.etiquetas.indexOf(et);
+  if(i>=0) p.etiquetas.splice(i,1); else p.etiquetas.push(et);
+  render();
+}
+function toggleEstadoProducto(id){
+  const p=S.catalogo.find(x=>x.id===id);
+  p.estado = p.estado==='ACTIVO' ? 'INACTIVO' : 'ACTIVO';
+  render();
+}
+function subirFoto(id, input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{ const p=S.catalogo.find(x=>x.id===id); p.imagen=e.target.result; render(); };
+  reader.readAsDataURL(file);
+}
+function nuevoProducto(){
+  const id = Math.max(0,...S.catalogo.map(p=>p.id))+1;
+  S.catalogo.push({id, nombre:'Nuevo plato', desc:'', categoria:'Plato fuerte', etiquetas:[], precioBase:300, cupoBase:6, estado:'ACTIVO', imagen:null});
+  render();
+}
+
+/* ============================================================
+   ACCIONES — plantilla
+   ============================================================ */
+function togglePlanItem(semTipo, diaSem, prodId){
+  const s=S.plantilla[semTipo]=S.plantilla[semTipo]||{};
+  if(!s[diaSem]) s[diaSem]={};
+  const dia=s[diaSem];
+  if(dia[prodId]) delete dia[prodId];
+  else{
+    const p=S.catalogo.find(x=>x.id===prodId);
+    dia[prodId]={precio:p.precioBase, cupo:p.cupoBase};
+  }
+  render();
+}
+function editarPlanItem(semTipo, diaSem, prodId, campo, val){
+  S.plantilla[semTipo][diaSem][prodId][campo]=+val;
+  render();
+}
+
+/* ============================================================
+   ACCIONES — publicación y calendario
+   ============================================================ */
+function publicarProgramacion(){
+  const dias = proximosHabiles(10);
+  let publicados=0;
+  dias.forEach(f=>{
+    if(S.reloj >= cutoffDe(f)) return;
+    if(S.menuDia[f]) return;
+    const semT = semanaTipoDe(f);
+    const diaSem = fechaDe(f).getDay();
+    const items = (S.plantilla[semT] && S.plantilla[semT][diaSem]) || {};
+    const entradas={};
+    Object.keys(items).forEach(pid=>{
+      const p = S.catalogo.find(x=>x.id===+pid);
+      if(!p || p.estado!=='ACTIVO') return;
+      entradas[pid] = {precio:items[pid].precio, cupo:items[pid].cupo, usado:0, activo:true};
+    });
+    if(Object.keys(entradas).length){ S.menuDia[f]=entradas; publicados++; }
+  });
+  if(!S.diaSel || estadoFecha(S.diaSel)==='SIN_PUBLICAR') S.diaSel = dias.find(f=>S.menuDia[f]) || S.diaSel;
+  render();
+}
+function toggleItemDia(fecha, prodId){
+  if(estadoFecha(fecha)==='CONGELADO') return;
+  const it=S.menuDia[fecha][prodId];
+  it.activo = !it.activo;
+  render();
+}
+function editarItemDia(fecha, prodId, campo, val){
+  if(estadoFecha(fecha)==='CONGELADO') return;
+  S.menuDia[fecha][prodId][campo]=+val;
+  render();
+}
+function seleccionarDia(f){ S.diaSel=f; render(); }
+function irCutoffSeleccion(){
+  if(!S.diaSel) return;
+  const co=cutoffDe(S.diaSel);
+  if(co>S.reloj) S.reloj=new Date(co.getTime()+60000);
+  render();
+}
+
+/* ============================================================
+   RELOJ
+   ============================================================ */
+function avanzar(min){ S.reloj=new Date(S.reloj.getTime()+min*60000); render(); }
+function reiniciar(){ S=estadoInicial(); render(); }
+function ir(v){ S.vista=v; render(); }
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+const VISTAS=[
+  {k:'catalogo', n:'Catálogo'},
+  {k:'plantilla', n:'Plantilla semanal'},
+  {k:'calendario', n:'Calendario y publicación'},
+  {k:'previa', n:'Vista del colaborador'}
+];
+
+function render(){
+  const d=S.reloj;
+  document.getElementById('rFecha').textContent = DIAS[d.getDay()]+', '+d.getDate()+' '+MESES[d.getMonth()]+' '+d.getFullYear();
+  document.getElementById('rHora').textContent = fmtHora(d);
+
+  const proximos = proximosHabiles(10);
+  const sinPublicarManana = proximos.length && estadoFecha(proximos[0])==='SIN_PUBLICAR';
+  const tiras=[];
+  tiras.push('<span class="tira">Cutoff diario <b>'+RUTA.horaCutoff+'</b> · D−'+RUTA.diasAnticipacion+'</span>');
+  if(sinPublicarManana) tiras.push('<span class="tira urg">El <b>'+fmtFecha(proximos[0])+'</b> aún no tiene menú publicado</span>');
+  const congelados = proximos.filter(f=>estadoFecha(f)==='CONGELADO').length;
+  if(congelados) tiras.push('<span class="tira"><b>'+congelados+'</b> día(s) ya congelados, sin cambios posibles</span>');
+  document.getElementById('rTiras').innerHTML = tiras.join('');
+
+  document.getElementById('nav').innerHTML = VISTAS.map(v=>
+    '<button aria-current="'+(S.vista===v.k)+'" onclick="ir(\''+v.k+'\')">'+v.n+'</button>').join('');
+
+  document.getElementById('app').innerHTML = ({
+    catalogo:vCatalogo, plantilla:vPlantilla, calendario:vCalendario, previa:vPrevia
+  })[S.vista]();
+}
+
+/* ---------- Vista: Catálogo ---------- */
+function vCatalogo(){
+  return `
+  <h2>Catálogo de platos</h2>
+  <p class="sub">El catálogo es permanente: cada plato se crea una vez, con su foto, y se reutiliza cada vez
+  que aparece en la programación semanal. Cambiar el precio aquí no afecta pedidos ya confirmados.</p>
+
+  <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+    <button class="btn sm" onclick="nuevoProducto()">Agregar plato</button>
+  </div>
+
+  ${S.catalogo.map(p=>{
+    const color = COLORES[p.id % COLORES.length];
+    const inicial = p.nombre.trim().slice(0,2).toUpperCase();
+    return `
+    <div class="prod ${p.estado==='INACTIVO'?'inactivo':''}">
+      <div class="foto" style="${p.imagen?`background-image:url('${p.imagen}')`:`background:${color}`}">
+        ${p.imagen?'':inicial}
+        <label>Cambiar foto<input type="file" accept="image/*" onchange="subirFoto(${p.id},this)"></label>
+      </div>
+      <div class="info">
+        <div class="fila" style="margin-bottom:6px">
+          <input value="${p.nombre}" style="font-weight:500;padding:5px 7px" onchange="actualizarProducto(${p.id},'nombre',this.value)">
+          <select style="max-width:150px" onchange="actualizarProducto(${p.id},'categoria',this.value)">
+            ${['Plato fuerte','Vegetariano','Ligero','Postre'].map(c=>`<option ${c===p.categoria?'selected':''}>${c}</option>`).join('')}
+          </select>
+        </div>
+        <input value="${p.desc}" placeholder="Descripción" style="font-size:12px;padding:5px 7px;margin-bottom:7px" onchange="actualizarProducto(${p.id},'desc',this.value)">
+        <div class="meta">
+          <span class="chips">
+            ${ETIQUETAS.map(e=>`<button class="chip" aria-pressed="${p.etiquetas.includes(e)}" onclick="toggleEtiqueta(${p.id},'${e}')">${e}</button>`).join('')}
+          </span>
+        </div>
+      </div>
+      <div style="text-align:right;flex:none;display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+        <input type="number" class="pr" value="${p.precioBase}" style="width:90px;text-align:right" onchange="actualizarProducto(${p.id},'precioBase',+this.value)">
+        <div style="display:flex;gap:4px;align-items:center;font-size:11.5px;color:var(--muted)">
+          cupo base <input type="number" value="${p.cupoBase}" style="width:46px;padding:3px 5px;border:1px solid var(--rule);border-radius:3px" onchange="actualizarProducto(${p.id},'cupoBase',+this.value)">
+        </div>
+        <button class="btn sec sm" onclick="toggleEstadoProducto(${p.id})">${p.estado==='ACTIVO'?'Desactivar':'Activar'}</button>
+      </div>
+    </div>`;
+  }).join('')}
+  <div class="aviso at">La foto se recorta 4:3 y se sirve en tres tamaños desde el CDN. Sin foto, se muestra
+  un color por categoría — la publicación nunca se bloquea por falta de imagen.</div>`;
+}
+
+/* ---------- Vista: Plantilla semanal ---------- */
+function vPlantilla(){
+  const activos = S.catalogo.filter(p=>p.estado==='ACTIVO');
+  const semanas = [1,2];
+  return `
+  <h2>Plantilla semanal</h2>
+  <p class="sub">Defines el patrón una vez por cada semana de rotación. La plataforma publica automáticamente
+  el <code class="mono">menu_dia</code> de cada fecha futura leyendo esta plantilla — no cargas el menú a diario.</p>
+
+  <div class="grid g2">
+    ${semanas.map(semT=>`
+    <div class="card">
+      <h3>Semana tipo ${semT} ${semT===1?'(impar)':'(par)'}</h3>
+      <table class="tabla-plan">
+        <tr><th>Día</th><th>Platos ofrecidos</th></tr>
+        ${[1,2,3,4,5].map(diaSem=>{
+          const items = (S.plantilla[semT] && S.plantilla[semT][diaSem]) || {};
+          return `<tr>
+            <td style="white-space:nowrap;font-weight:500;text-transform:capitalize;padding-top:10px">${NOM_DIA[diaSem]}</td>
+            <td>${activos.map(p=>{
+              const on = !!items[p.id];
+              return `<div class="itemplan">
+                <input type="checkbox" ${on?'checked':''} onchange="togglePlanItem(${semT},${diaSem},${p.id})">
+                <span class="n">${p.nombre}</span>
+                ${on?`<input type="number" value="${items[p.id].precio}" onchange="editarPlanItem(${semT},${diaSem},${p.id},'precio',this.value)">
+                      <input type="number" value="${items[p.id].cupo}" onchange="editarPlanItem(${semT},${diaSem},${p.id},'cupo',this.value)">`:''}
+              </div>`;
+            }).join('')}
+            ${!Object.keys(items).length?'<span style="color:var(--muted);font-size:12px">Sin platos este día</span>':''}
+            </td>
+          </tr>`;
+        }).join('')}
+      </table>
+    </div>`).join('')}
+  </div>
+
+  <div class="aviso si" style="margin-top:16px">
+    La rotación entre semana 1 y 2 se calcula por número de semana ISO, así que se alterna sola: no hace falta
+    que nadie recuerde en qué semana del ciclo está. Ve a <b>Calendario y publicación</b> para generar el menú real.
+  </div>`;
+}
+
+/* ---------- Vista: Calendario y publicación ---------- */
+function vCalendario(){
+  const dias = proximosHabiles(10);
+  if(!S.diaSel || !dias.includes(S.diaSel)) S.diaSel = dias.find(f=>S.menuDia[f]) || dias[0];
+
+  const sel = S.diaSel;
+  const estSel = sel ? estadoFecha(sel) : null;
+  const itemsSel = sel && S.menuDia[sel] ? S.menuDia[sel] : null;
+
+  return `
+  <h2>Calendario y publicación</h2>
+  <p class="sub">Publicar aplica la plantilla a cada fecha futura y crea su <code class="mono">menu_dia</code>.
+  Al vencer el cutoff de cada fecha, ese día se congela: precio y cupo dejan de poder editarse porque ya
+  hay pedidos que copiaron esos valores.</p>
+
+  <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+    <button class="btn ok" onclick="publicarProgramacion()">Publicar próximos 10 días hábiles</button>
+  </div>
+
+  <div class="cal" style="margin-bottom:20px">
+    ${dias.map(f=>{
+      const est = estadoFecha(f);
+      const semT = semanaTipoDe(f);
+      return `<div class="dia ${f===sel?'sel':''}" onclick="seleccionarDia('${f}')">
+        <div class="f">${fmtFecha(f).split(' ')[0]} ${fmtCorto(f)}</div>
+        <div class="n">semana tipo ${semT} · cierra ${fmtHora(cutoffDe(f))}</div>
+        <span class="est e-${est}">${est.replace('_',' ')}</span>
+      </div>`;
+    }).join('')}
+  </div>
+
+  ${sel?`
+  <div class="card">
+    <h3>${fmtFecha(sel)} <span class="est e-${estSel}" style="margin-left:8px">${estSel.replace('_',' ')}</span></h3>
+    ${!itemsSel? `<div class="vacio">Este día aún no tiene menú publicado. Usa el botón de arriba.</div>` : `
+    <table class="simple">
+      <tr><th>Plato</th><th class="num">Precio</th><th class="num">Cupo</th><th>Estado</th><th></th></tr>
+      ${Object.keys(itemsSel).map(pid=>{
+        const p=S.catalogo.find(x=>x.id===+pid);
+        const it=itemsSel[pid];
+        const bloqueado = estSel==='CONGELADO';
+        return `<tr>
+          <td>${p.nombre}</td>
+          <td class="num"><input type="number" value="${it.precio}" style="width:70px;text-align:right" ${bloqueado?'disabled':''} onchange="editarItemDia('${sel}',${pid},'precio',this.value)"></td>
+          <td class="num"><input type="number" value="${it.cupo}" style="width:56px;text-align:right" ${bloqueado?'disabled':''} onchange="editarItemDia('${sel}',${pid},'cupo',this.value)"></td>
+          <td>${it.activo?'<span class="est e-ACTIVO">disponible</span>':'<span class="est e-INACTIVO">retirado</span>'}</td>
+          <td style="text-align:right">
+            ${!bloqueado?`<button class="btn sec sm" onclick="toggleItemDia('${sel}',${pid})">${it.activo?'Retirar':'Reactivar'}</button>`:'<span style="font-size:11px;color:var(--muted)">sin cambios</span>'}
+          </td>
+        </tr>`;
+      }).join('')}
+    </table>
+    ${estSel==='CONGELADO'?
+      '<div class="aviso no">Este día ya pasó su cutoff. Ya existen pedidos con estos precios — cualquier cambio real necesitaría una excepción administrativa, no una edición directa.</div>':
+      '<div class="aviso at">Puedes retirar un plato puntual (por ejemplo, si se agotó un insumo) sin tocar la plantilla base.</div>'}
+    `}
+  </div>`:''}`;
+}
+
+/* ---------- Vista: Vista del colaborador ---------- */
+function vPrevia(){
+  const dias = proximosHabiles(10).filter(f=>S.menuDia[f] && estadoFecha(f)!=='SIN_PUBLICAR');
+  const fecha = dias[0];
+  return `
+  <h2>Cómo lo ve el colaborador</h2>
+  <p class="sub">Mismo <code class="mono">menu_dia</code>, ajustado por el contrato de precio de cada empresa.
+  El suplidor nunca ve ni configura este ajuste — lo controla el acuerdo comercial entre plataforma y empresa.</p>
+
+  ${!fecha? '<div class="vacio">Publica al menos un día para ver la vista previa.</div>' : `
+  <div class="grid g2">
+    ${EMPRESAS_CONTRATO.map(emp=>{
+      const items = S.menuDia[fecha];
+      return `<div class="card">
+        <h3>${emp.nombre} <span style="font-weight:400;color:var(--muted);font-size:12px">· ${fmtFecha(fecha)}</span></h3>
+        ${Object.keys(items).filter(pid=>items[pid].activo).map(pid=>{
+          const p=S.catalogo.find(x=>x.id===+pid);
+          const base=items[pid].precio;
+          const ajustado = Math.round(base*(1+emp.ajustePct/100));
+          return `<div class="kv"><span>${p.nombre}</span><span class="v">${emp.ajustePct?`<span style="text-decoration:line-through;color:var(--muted);margin-right:6px">${$(base)}</span>`:''}RD$ ${$(ajustado)}</span></div>`;
+        }).join('')}
+        ${emp.ajustePct?`<div style="font-size:11.5px;color:var(--muted);margin-top:8px">Ajuste de contrato: ${emp.ajustePct}%</div>`:''}
+      </div>`;
+    }).join('')}
+  </div>`}`;
+}
+
+render();
+</script>
+</body>
+</html>

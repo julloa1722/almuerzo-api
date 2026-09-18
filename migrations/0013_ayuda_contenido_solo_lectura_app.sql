@@ -1,0 +1,12 @@
+-- Sprint 8: garantía real de que solo plataforma escribe ayuda_contenido.
+--
+-- El RolesGuard de la aplicación ya restringe POST/PATCH/DELETE /ayuda a
+-- SUPERADMIN/SOPORTE, pero ambos roles conectan vía almuerzo_platform
+-- (ámbito PLATAFORMA) — mientras que RRHH/COLABORADOR/SUPLIDOR_ADMIN
+-- conectan vía almuerzo_app (ámbito EMPRESA/SUPLIDOR). Como ayuda_contenido
+-- no tiene RLS (es contenido de plataforma, no de un tenant), sin este
+-- REVOKE cualquier endpoint futuro con un bug en su @Roles podría dejar
+-- escribir aquí a un rol que no debería. Igual que `movimiento` (migración
+-- 10), la garantía real vive en los permisos de Postgres, no solo en el
+-- código de la aplicación.
+REVOKE INSERT, UPDATE, DELETE ON ayuda_contenido FROM almuerzo_app;

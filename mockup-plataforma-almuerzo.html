@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consola de simulación — plataforma de almuerzo corporativo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#161D26; --ink-2:#232D3B; --ink-3:#3A4757;
+  --paper:#F7F6F2; --card:#FFFFFF; --rule:#DCD8CE; --rule-2:#EAE7E0; --muted:#6B6A63;
+  --verde:#2D6A4F; --verde-bg:#E6EFEA;
+  --ambar:#B06C05; --ambar-bg:#FBF0DC;
+  --granate:#9B2C2C; --granate-bg:#F8E9E9;
+  --azul:#1F4E79; --azul-bg:#E7EEF5;
+  --r:6px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;
+  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.mono{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--ambar);outline-offset:2px}
+
+.reloj{position:sticky;top:0;z-index:50;background:var(--ink);color:#EDEAE3;border-bottom:3px solid var(--ambar)}
+.reloj-in{max-width:1280px;margin:0 auto;padding:14px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:20px}
+.reloj-marca{font-weight:600;font-size:14px;color:#9BA6B4;white-space:nowrap}
+.reloj-marca b{color:#EDEAE3;display:block;font-size:15px}
+.reloj-hora{flex:1;min-width:200px}
+.reloj-hora .fecha{font-size:13px;color:#9BA6B4;text-transform:capitalize}
+.reloj-hora .hh{font-family:"IBM Plex Mono",monospace;font-size:30px;font-weight:500;letter-spacing:-.02em;line-height:1}
+.reloj-btns{display:flex;flex-wrap:wrap;gap:6px}
+.reloj-btns button{background:var(--ink-2);border:1px solid var(--ink-3);color:#DDD8CF;
+  padding:6px 11px;border-radius:var(--r);font-size:13px;font-weight:500;transition:background .15s}
+.reloj-btns button:hover{background:var(--ink-3)}
+.reloj-btns button.salto{background:var(--ambar);border-color:var(--ambar);color:#231703}
+.reloj-btns button.reset{background:transparent;border-color:var(--ink-3);color:#8F9AA8}
+.tiras{max-width:1280px;margin:0 auto;padding:0 20px 12px;display:flex;flex-wrap:wrap;gap:8px}
+.tira{font-size:12.5px;background:var(--ink-2);border:1px solid var(--ink-3);padding:4px 10px;border-radius:20px;color:#B9C2CE}
+.tira b{color:#EDEAE3;font-weight:600}
+.tira.urg{background:#3A2A08;border-color:#6B4E0C;color:#F0C97A}
+.tira.urg b{color:#FBD98C}
+
+nav{background:var(--card);border-bottom:1px solid var(--rule)}
+.nav-in{max-width:1280px;margin:0 auto;padding:0 20px;display:flex;gap:2px;overflow-x:auto}
+nav button{background:none;border:none;border-bottom:3px solid transparent;padding:13px 15px;
+  font-size:14px;font-weight:500;color:var(--muted);white-space:nowrap}
+nav button:hover{color:var(--ink)}
+nav button[aria-current="true"]{color:var(--ink);border-bottom-color:var(--verde);font-weight:600}
+nav button .cnt{font-family:"IBM Plex Mono",monospace;font-size:11px;background:var(--rule-2);
+  color:var(--muted);padding:1px 5px;border-radius:9px;margin-left:5px}
+nav button[aria-current="true"] .cnt{background:var(--verde-bg);color:var(--verde)}
+
+main{max-width:1280px;margin:0 auto;padding:24px 20px 80px}
+h2{font-size:19px;font-weight:600;letter-spacing:-.015em;margin:0 0 4px}
+h3{font-size:14px;font-weight:600;margin:0 0 12px}
+.sub{color:var(--muted);font-size:13.5px;margin:0 0 20px;max-width:72ch}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(330px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(255px,1fr))}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:var(--r);padding:18px}
+.card h3{padding-bottom:9px;border-bottom:1px solid var(--rule-2)}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--muted)}
+
+.campo{margin-bottom:14px}
+.campo:last-child{margin-bottom:0}
+.campo label{display:block;font-size:12.5px;font-weight:500;margin-bottom:5px}
+.campo .hint{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+.campo input,.campo select{width:100%;padding:7px 9px;border:1px solid var(--rule);border-radius:4px;background:var(--paper)}
+.campo input[type=number]{font-family:"IBM Plex Mono",monospace}
+.campo input:focus,.campo select:focus{border-color:var(--ink-3);background:#fff}
+.fila{display:flex;gap:10px}
+.fila>*{flex:1}
+.check{display:flex;align-items:flex-start;gap:8px;font-size:13px;margin-bottom:10px}
+.check input{width:auto;margin-top:3px;flex:none}
+.dow{display:flex;gap:4px;flex-wrap:wrap}
+.dow button{border:1px solid var(--rule);background:var(--paper);padding:5px 0;width:36px;border-radius:4px;
+  font-size:12px;font-weight:500;color:var(--muted)}
+.dow button[aria-pressed="true"]{background:var(--verde);border-color:var(--verde);color:#fff}
+
+.btn{border:1px solid var(--ink);background:var(--ink);color:#fff;padding:8px 14px;border-radius:var(--r);
+  font-size:13.5px;font-weight:500;transition:opacity .15s}
+.btn:hover{opacity:.85}
+.btn.sec{background:transparent;color:var(--ink);border-color:var(--rule)}
+.btn.sec:hover{background:var(--paper);opacity:1}
+.btn.ok{background:var(--verde);border-color:var(--verde)}
+.btn.dan{background:transparent;color:var(--granate);border-color:#E0BDBD}
+.btn.sm{padding:5px 10px;font-size:12.5px}
+.btn.xs{padding:2px 7px;font-size:11.5px}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+
+.est{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:500;
+  letter-spacing:.05em;padding:2px 7px;border-radius:3px;border:1px solid}
+.e-BORRADOR,.e-SIN_PUBLICAR,.e-CANCELADO{background:var(--rule-2);color:var(--muted);border-color:var(--rule)}
+.e-CONFIRMADO,.e-ENVIADO,.e-EN_REVISION{background:var(--azul-bg);color:var(--azul);border-color:#BBD0E3}
+.e-EN_PREPARACION,.e-ENTREGADO,.e-CONGELADO{background:var(--ambar-bg);color:var(--ambar);border-color:#EBD3A5}
+.e-RECIBIDO,.e-PUBLICADO,.e-ABIERTO{background:var(--verde-bg);color:var(--verde);border-color:#BCD8C9}
+.e-DISPUTA,.e-NO_ENTREGADO{background:var(--granate-bg);color:var(--granate);border-color:#E5C2C2}
+.e-CERRADO{background:var(--rule-2);color:var(--ink);border-color:var(--rule)}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:500;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--muted);padding:0 10px 7px 0;border-bottom:1px solid var(--rule)}
+td{padding:9px 10px 9px 0;border-bottom:1px solid var(--rule-2);vertical-align:top}
+tr:last-child td{border-bottom:none}
+.num{text-align:right;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;padding-right:0}
+th.num{padding-right:0}
+.neg{color:var(--granate)}
+
+.colab-wrap{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:840px){.colab-wrap{grid-template-columns:1fr}}
+.tel{background:var(--ink);border-radius:18px;padding:9px}
+.tel-in{background:var(--card);border-radius:11px;overflow:hidden}
+.tel-top{background:var(--verde);color:#fff;padding:14px 16px}
+.tel-top .n{font-weight:600;font-size:15px}
+.tel-top .s{font-size:12px;opacity:.85}
+.tel-body{padding:14px 16px}
+.plato{border:1px solid var(--rule);border-radius:var(--r);padding:9px;margin-bottom:9px;
+  display:flex;gap:11px;align-items:center;transition:border-color .15s;cursor:pointer}
+.plato:hover{border-color:var(--ink-3)}
+.plato.sel{border-color:var(--verde);background:var(--verde-bg)}
+.plato.ago{opacity:.42;cursor:not-allowed}
+.plato .info{flex:1;min-width:0}
+.plato .nm{font-weight:500;font-size:13.5px;line-height:1.3}
+.plato .dt{font-size:11.5px;color:var(--muted);margin-top:2px}
+.plato .pr{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:500;white-space:nowrap}
+.desglose{background:var(--paper);border:1px solid var(--rule);border-radius:var(--r);padding:12px;margin:12px 0}
+.dl{display:flex;justify-content:space-between;font-size:13px;padding:3px 0}
+.dl .v{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+.dl.tot{border-top:1px solid var(--rule);margin-top:6px;padding-top:7px;font-weight:600}
+.dl.sub .v{color:var(--verde)}
+.aviso{font-size:12.5px;padding:9px 11px;border-radius:4px;margin:10px 0;line-height:1.45;border-left:3px solid}
+.aviso.no{background:var(--granate-bg);border-color:var(--granate);color:#6E1F1F}
+.aviso.si{background:var(--verde-bg);border-color:var(--verde);color:#1E4A36}
+.aviso.at{background:var(--ambar-bg);border-color:var(--ambar);color:#6E4403}
+.medidor{height:5px;background:var(--rule-2);border-radius:3px;overflow:hidden;margin-top:5px}
+.medidor i{display:block;height:100%;background:var(--verde);transition:width .3s}
+.medidor i.alto{background:var(--ambar)}
+.medidor i.tope{background:var(--granate)}
+.selcolab{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.selcolab button{text-align:left;border:1px solid var(--rule);background:var(--card);border-radius:var(--r);
+  padding:8px 11px;font-size:13px;display:flex;justify-content:space-between;gap:10px}
+.selcolab button[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:#fff}
+.selcolab .sal{font-family:"IBM Plex Mono",monospace;font-size:11.5px;opacity:.7}
+
+.subnav{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:18px;border-bottom:1px solid var(--rule)}
+.subnav button{background:none;border:none;border-bottom:2px solid transparent;padding:8px 12px;
+  font-size:13.5px;font-weight:500;color:var(--muted)}
+.subnav button[aria-current="true"]{color:var(--ink);border-bottom-color:var(--ambar);font-weight:600}
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(245px,1fr));gap:12px}
+.prod{border:1px solid var(--rule);border-radius:var(--r);padding:11px;background:var(--card);display:flex;gap:11px}
+.prod.off{opacity:.5}
+.prod .b{flex:1;min-width:0}
+.prod .nm{font-weight:500;font-size:13.5px;line-height:1.25}
+.prod .dt{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.4}
+.tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:9px;background:var(--rule-2);
+  color:var(--muted);margin:3px 3px 0 0}
+.semana{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.dia{border:1px solid var(--rule);border-radius:var(--r);background:var(--card);overflow:hidden}
+.dia-h{background:var(--paper);padding:7px 10px;border-bottom:1px solid var(--rule);
+  font-size:12px;font-weight:600;display:flex;justify-content:space-between;align-items:center;text-transform:capitalize}
+.dia-b{padding:8px 10px;min-height:58px}
+.item{font-size:12px;padding:6px 0;border-bottom:1px solid var(--rule-2);display:flex;gap:7px;align-items:flex-start}
+.item:last-child{border-bottom:none}
+.item .x{flex:1;min-width:0}
+.mini{width:56px;padding:2px 4px;border:1px solid var(--rule);border-radius:3px;background:var(--paper);
+  font-family:"IBM Plex Mono",monospace;font-size:11px}
+.pub-fecha{border:1px solid var(--rule);border-radius:var(--r);padding:11px 13px;margin-bottom:9px;background:var(--card)}
+.pub-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:7px}
+.log{font-family:"IBM Plex Mono",monospace;font-size:12px;line-height:1.7}
+.log .ln{display:flex;gap:12px;padding:4px 0;border-bottom:1px solid var(--rule-2)}
+.log .ts{color:var(--muted);white-space:nowrap;flex:none}
+.log .ac{flex:none;width:112px;color:var(--azul)}
+.log .tx{flex:1;min-width:0}
+pre.csv{background:var(--ink);color:#C9D3DE;font-family:"IBM Plex Mono",monospace;font-size:12px;
+  padding:14px;border-radius:var(--r);overflow-x:auto;margin:0;line-height:1.6}
+.vacio{color:var(--muted);font-size:13px;padding:22px 0;text-align:center}
+.kv{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:5px 0;border-bottom:1px solid var(--rule-2)}
+.kv:last-child{border-bottom:none}
+.kv .v{font-family:"IBM Plex Mono",monospace;font-weight:500;white-space:nowrap;text-align:right}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="reloj">
+  <div class="reloj-in">
+    <div class="reloj-marca">Consola de simulación<b>Almuerzo corporativo</b></div>
+    <div class="reloj-hora">
+      <div class="fecha" id="rFecha">—</div>
+      <div class="hh" id="rHora">—</div>
+    </div>
+    <div class="reloj-btns">
+      <button onclick="avanzar(30)">+30 min</button>
+      <button onclick="avanzar(60)">+1 h</button>
+      <button onclick="avanzar(240)">+4 h</button>
+      <button onclick="avanzar(1440)">+1 día</button>
+      <button class="salto" onclick="saltarCutoff()">Ir al cutoff</button>
+      <button class="salto" onclick="saltarCorte()">Ir al corte</button>
+      <button class="reset" onclick="reiniciar()">Reiniciar</button>
+    </div>
+  </div>
+  <div class="tiras" id="rTiras"></div>
+</div>
+
+<nav><div class="nav-in" id="nav"></div></nav>
+<main id="app"></main>
+
+<script>
+/* ============================================================
+   CONSTANTES Y CATÁLOGO SEMILLA
+   ============================================================ */
+const INICIO = new Date(2026,6,27,7,30,0);
+const FERIADOS = ['2026-08-16','2026-09-24','2026-11-06','2026-12-25'];
+const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const DIAS_C = ['dom','lun','mar','mié','jue','vie','sáb'];
+const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+const CATS = {
+  criollo:{n:'Criollo',  c:'#B07D2A', b:'#F5EDDB'},
+  proteina:{n:'Proteína',c:'#96552F', b:'#F3E7DF'},
+  ligero:{n:'Ligero',    c:'#46845A', b:'#E6F0E8'},
+  sopa:{n:'Sopa',        c:'#3B7490', b:'#E4EEF3'},
+  premium:{n:'Premium',  c:'#74497A', b:'#EFE7F0'}
+};
+
+const PUNTOS = [
+  {id:1, empresa:1, nombre:'Torre corporativa · piso 4'},
+  {id:2, empresa:1, nombre:'Centro de operaciones · Los Alcarrizos'}
+];
+const EMPRESAS = [
+  {id:1, nombre:'Grupo Comercial Bávaro', rnc:'101-55823-4'},
+  {id:2, nombre:'Industrias del Caribe',  rnc:'101-77219-9'}
+];
+const SUPLIDORES = [
+  {id:1, nombre:'Cocina Criolla del Este', rnc:'131-45872-1', puntos:[1,2]},
+  {id:2, nombre:'Verde Menú',              rnc:'130-99114-6', puntos:[1]}
+];
+const CONTRATOS = [
+  {sup:1, empresa:1, ajuste:0},
+  {sup:1, empresa:2, ajuste:-8},
+  {sup:2, empresa:1, ajuste:0}
+];
+
+const CAT_BASE = [
+  {id:1, sup:1, nombre:'Bandeja del día',             cat:'criollo',  desc:'Arroz, habichuelas, carne guisada y ensalada', precio:320, alerg:[]},
+  {id:2, sup:1, nombre:'Sancocho con arroz blanco',   cat:'criollo',  desc:'Res y víveres, porción individual',            precio:380, alerg:[]},
+  {id:3, sup:1, nombre:'Pechuga a la plancha',        cat:'proteina', desc:'Puré de auyama y vegetales al vapor',          precio:350, alerg:['lácteos']},
+  {id:4, sup:1, nombre:'Moro de guandules y chuleta', cat:'criollo',  desc:'Con ensalada verde',                           precio:335, alerg:[]},
+  {id:5, sup:1, nombre:'Pescado al coco',             cat:'proteina', desc:'Con tostones y ensalada',                      precio:395, alerg:['pescado']},
+  {id:6, sup:2, nombre:'Bowl vegetariano',            cat:'ligero',   desc:'Quinoa, garbanzos y aguacate',                 precio:310, alerg:[]},
+  {id:7, sup:2, nombre:'Wrap de pollo al curry',      cat:'ligero',   desc:'Con papas al horno',                           precio:295, alerg:['gluten','lácteos']},
+  {id:8, sup:2, nombre:'Salmón con vegetales',        cat:'premium',  desc:'Porción de 180 g',                             precio:480, alerg:['pescado']},
+  {id:9, sup:2, nombre:'Sopa del día con pan',        cat:'sopa',     desc:'Rotativa según temporada',                     precio:240, alerg:['gluten']}
+];
+
+const PLANT_BASE = {
+  1:{rotacion:2, items:{
+    '1|1':[{p:1,pr:320,cu:8},{p:3,pr:350,cu:6}],
+    '1|2':[{p:4,pr:335,cu:8},{p:5,pr:395,cu:4}],
+    '1|3':[{p:1,pr:320,cu:8},{p:3,pr:350,cu:6}],
+    '1|4':[{p:4,pr:335,cu:8},{p:5,pr:395,cu:4}],
+    '1|5':[{p:2,pr:380,cu:6},{p:1,pr:320,cu:6}],
+    '2|1':[{p:3,pr:350,cu:8},{p:4,pr:335,cu:6}],
+    '2|2':[{p:1,pr:320,cu:8},{p:5,pr:395,cu:4}],
+    '2|3':[{p:4,pr:335,cu:8},{p:3,pr:350,cu:6}],
+    '2|4':[{p:1,pr:320,cu:8},{p:5,pr:395,cu:4}],
+    '2|5':[{p:2,pr:380,cu:6},{p:4,pr:335,cu:6}]
+  }},
+  2:{rotacion:1, items:{
+    '1|1':[{p:6,pr:310,cu:6},{p:9,pr:240,cu:10}],
+    '1|2':[{p:7,pr:295,cu:6},{p:9,pr:240,cu:10}],
+    '1|3':[{p:6,pr:310,cu:6},{p:8,pr:480,cu:3}],
+    '1|4':[{p:7,pr:295,cu:6},{p:9,pr:240,cu:10}],
+    '1|5':[{p:8,pr:480,cu:3},{p:6,pr:310,cu:6}]
+  }}
+};
+
+const CFG_BASE = {
+  tipoSubsidio:'MONTO_FIJO', valorSubsidio:250,
+  topeDiarioSubsidio:300, topeCicloColaborador:3000, pctMaxSalario:15,
+  permiteExcedente:true, diasSemana:[1,2,3,4,5],
+  horaCutoff:'10:00', diasAnticipacion:0, horaEntrega:'12:30', usarCupos:true,
+  politicaSilencio:'AUTO_CONFIRMA', horasVentana:6,
+  frecuenciaNomina:'QUINCENAL', diasAntesCorte:0,
+  modeloNegocio:'AGENTE', tasaComision:8, itbis:18, feePorColaborador:150,
+  requiereAprobacionMenu:false, semanasPublicacion:3, horasAvisoPublicacion:24
+};
+
+let S;
+
+function estadoInicial(){
+  return {
+    reloj:new Date(INICIO),
+    disputaModal:null,
+    cfg:JSON.parse(JSON.stringify(CFG_BASE)),
+    catalogo:JSON.parse(JSON.stringify(CAT_BASE)),
+    plantillas:JSON.parse(JSON.stringify(PLANT_BASE)),
+    menuDia:[],
+    colaboradores:[
+      {id:1, cod:'N-1042', cedula:'001-1842306-4', nombre:'Ana Ramírez', empresa:1, punto:1, salario:42000},
+      {id:2, cod:'N-1187', cedula:'402-2019887-1', nombre:'Luis Fermín',  empresa:1, punto:1, salario:28500},
+      {id:3, cod:'N-1203', cedula:'001-0997451-8', nombre:'Carla Peña',   empresa:1, punto:2, salario:65000},
+      {id:4, cod:'N-1290', cedula:'031-0455129-3', nombre:'Héctor Objío', empresa:1, punto:2, salario:21000}
+    ],
+    pedidos:[], movimientos:[], eventos:[], ciclos:[],
+    seq:{p:100, m:500, e:1, md:1, prod:20},
+    vista:'sup', subSup:'catalogo',
+    colab:1, fechaPedido:null, carrito:{},
+    supActivo:1, fechaSup:null, semanaPlant:1,
+    nuevo:{nombre:'', cat:'criollo', precio:300}
+  };
+}
+
+/* ============================================================
+   FECHAS
+   ============================================================ */
+function iso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function fechaDe(s){const[a,m,d]=s.split('-').map(Number);return new Date(a,m-1,d)}
+function fmtFecha(s){const d=fechaDe(s);return DIAS[d.getDay()]+' '+d.getDate()+' '+MESES[d.getMonth()]}
+function fmtCorto(s){const d=fechaDe(s);return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')}
+function fmtHora(d){return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function fmtSello(d){return fmtCorto(iso(d))+' '+fmtHora(d)}
+function $(n){return (Math.round(n*100)/100).toLocaleString('es-DO',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function esHabil(d){return S.cfg.diasSemana.includes(d.getDay()) && !FERIADOS.includes(iso(d))}
+function hm(s){const[h,m]=s.split(':').map(Number);return{h,m}}
+
+function cutoffDe(fechaISO){
+  const d=fechaDe(fechaISO);
+  let n=S.cfg.diasAnticipacion;
+  while(n>0){ d.setDate(d.getDate()-1); if(esHabil(d)) n--; }
+  const {h,m}=hm(S.cfg.horaCutoff);
+  d.setHours(h,m,0,0);
+  return d;
+}
+const LUNES_REF = new Date(2026,5,29);
+function semanaTipo(fechaISO, supId){
+  const rot=S.plantillas[supId].rotacion;
+  const dif=Math.floor((fechaDe(fechaISO)-LUNES_REF)/(7*86400000));
+  return ((dif%rot)+rot)%rot + 1;
+}
+function proximasFechas(n){
+  const out=[]; const d=new Date(S.reloj); d.setHours(0,0,0,0);
+  for(let i=0;i<n*3 && out.length<n;i++){
+    if(esHabil(d)) out.push(iso(d));
+    d.setDate(d.getDate()+1);
+  }
+  return out;
+}
+function fechasDisponibles(){ return proximasFechas(10).filter(f=>S.reloj<cutoffDe(f)).slice(0,5); }
+
+function periodoDe(d){
+  const y=d.getFullYear(), m=d.getMonth(), dd=d.getDate();
+  const ult=new Date(y,m+1,0).getDate();
+  if(S.cfg.frecuenciaNomina==='MENSUAL') return {ini:iso(new Date(y,m,1)), fin:iso(new Date(y,m,ult))};
+  if(dd<=15) return {ini:iso(new Date(y,m,1)), fin:iso(new Date(y,m,15))};
+  return {ini:iso(new Date(y,m,16)), fin:iso(new Date(y,m,ult))};
+}
+function corteDe(p){
+  const d=fechaDe(p.fin);
+  d.setDate(d.getDate()-S.cfg.diasAntesCorte);
+  d.setHours(23,59,0,0);
+  return d;
+}
+
+/* ============================================================
+   MENÚ: catálogo, plantilla, publicación
+   ============================================================ */
+function prod(id){ return S.catalogo.find(p=>p.id===id); }
+function ajusteContrato(supId, empresaId){
+  const c=CONTRATOS.find(c=>c.sup===supId && c.empresa===empresaId);
+  return c? c.ajuste : 0;
+}
+function precioEfectivo(md, empresaId){
+  return Math.round(md.precio*(1+ajusteContrato(md.sup,empresaId)/100)*100)/100;
+}
+function menuDe(supId, fechaISO){ return S.menuDia.filter(m=>m.sup===supId && m.fecha===fechaISO); }
+function estadoMenu(supId, fechaISO){
+  const f=menuDe(supId,fechaISO);
+  if(!f.length) return 'SIN_PUBLICAR';
+  if(S.reloj>=cutoffDe(fechaISO)) return 'CONGELADO';
+  return f[0].estado;
+}
+
+function publicarMenu(supId, semanas, actor){
+  const fechas=proximasFechas(semanas*5);
+  let creadas=0, dias=0;
+  fechas.forEach(f=>{
+    if(S.reloj>=cutoffDe(f)) return;
+    if(menuDe(supId,f).length) return;
+    const items=S.plantillas[supId].items[semanaTipo(f,supId)+'|'+fechaDe(f).getDay()]||[];
+    if(!items.length) return;
+    items.forEach(it=>{
+      S.menuDia.push({id:S.seq.md++, sup:supId, fecha:f, prod:it.p, precio:it.pr, cupo:it.cu, usado:0,
+        estado: S.cfg.requiereAprobacionMenu?'EN_REVISION':'PUBLICADO'});
+      creadas++;
+    });
+    dias++;
+  });
+  if(dias) log(actor, SUPLIDORES.find(s=>s.id===supId).nombre+' publicó el menú de <b>'+dias+' día(s)</b> · '+creadas+' platos programados');
+  return dias;
+}
+function aprobarMenu(supId, fechaISO){
+  menuDe(supId,fechaISO).forEach(m=>m.estado='PUBLICADO');
+  log('RRHH','Menú de '+SUPLIDORES.find(s=>s.id===supId).nombre+' para el '+fmtCorto(fechaISO)+' aprobado');
+  render();
+}
+function agotarPlato(id){
+  const m=S.menuDia.find(x=>x.id===id); m.cupo=m.usado;
+  log('SUPLIDOR','<b>'+prod(m.prod).nombre+'</b> agotado para el '+fmtCorto(m.fecha)); render();
+}
+function quitarPlato(id){
+  const m=S.menuDia.find(x=>x.id===id);
+  if(m.usado>0) return;
+  S.menuDia=S.menuDia.filter(x=>x.id!==id);
+  log('SUPLIDOR','<b>'+prod(m.prod).nombre+'</b> retirado del menú del '+fmtCorto(m.fecha)); render();
+}
+function fechasSinMenu(supId){
+  return proximasFechas(6).filter(f=>
+    S.reloj<cutoffDe(f) && !menuDe(supId,f).length &&
+    (cutoffDe(f)-S.reloj) < S.cfg.horasAvisoPublicacion*3600000);
+}
+function setPrecioBase(id,v){ prod(id).precio=+v; render(); }
+function togglePlato(id){ const p=prod(id); p.off=!p.off; render(); }
+function agregarProducto(){
+  if(!S.nuevo.nombre.trim()) return;
+  S.catalogo.push({id:S.seq.prod++, sup:S.supActivo, nombre:S.nuevo.nombre.trim(), cat:S.nuevo.cat,
+    desc:'Cargado desde el portal del suplidor', precio:+S.nuevo.precio, alerg:[]});
+  log('SUPLIDOR','Producto <b>'+S.nuevo.nombre.trim()+'</b> agregado al catálogo');
+  S.nuevo={nombre:'',cat:'criollo',precio:300}; render();
+}
+function plantillaItems(supId,semana,dia){ return S.plantillas[supId].items[semana+'|'+dia]||[]; }
+function agregarAPlantilla(supId,semana,dia,prodId){
+  if(!prodId) return;
+  const k=semana+'|'+dia;
+  const arr=S.plantillas[supId].items[k]=S.plantillas[supId].items[k]||[];
+  if(arr.find(i=>i.p===+prodId)) return;
+  const p=prod(+prodId);
+  arr.push({p:p.id, pr:p.precio, cu:6});
+  log('SUPLIDOR','<b>'+p.nombre+'</b> agregado a la plantilla · semana '+semana+', '+DIAS[dia]);
+  render();
+}
+function quitarDePlantilla(supId,semana,dia,prodId){
+  const k=semana+'|'+dia;
+  S.plantillas[supId].items[k]=(S.plantillas[supId].items[k]||[]).filter(i=>i.p!==prodId);
+  render();
+}
+function setRotacion(supId,v){
+  S.plantillas[supId].rotacion=+v;
+  if(S.semanaPlant>+v) S.semanaPlant=1;
+  render();
+}
+function setItemCampo(supId,semana,dia,prodId,campo,v){
+  const it=(S.plantillas[supId].items[semana+'|'+dia]||[]).find(i=>i.p===prodId);
+  if(it) it[campo]=+v;
+  render();
+}
+
+/* ============================================================
+   MOTOR TEMPORAL
+   ============================================================ */
+function log(actor,texto){ S.eventos.unshift({id:S.seq.e++, ts:new Date(S.reloj), actor, texto}); }
+
+function cicloAbierto(){
+  let c=S.ciclos.find(c=>c.estado==='ABIERTO');
+  if(!c){
+    const p=periodoDe(S.reloj);
+    c={id:S.ciclos.length+1, ini:p.ini, fin:p.fin, estado:'ABIERTO', corte:corteDe(p), descuentos:null, cerrado:null};
+    S.ciclos.unshift(c);
+    log('SISTEMA','Ciclo de nómina <b>'+fmtCorto(c.ini)+' – '+fmtCorto(c.fin)+'</b> abierto');
+  }
+  return c;
+}
+function mover(tipo,colabId,monto,desc,pedidoId,revierte){
+  const c=cicloAbierto();
+  const m={id:S.seq.m++, ciclo:c.id, colab:colabId, tipo, monto, desc,
+           pedido:pedidoId||null, revierte:revierte||null, ts:new Date(S.reloj)};
+  S.movimientos.unshift(m);
+  return m;
+}
+function cambiar(p,nuevo,actor,motivo){
+  const ant=p.estado; p.estado=nuevo;
+  p.hist.push({de:ant,a:nuevo,ts:new Date(S.reloj),actor});
+  const col=S.colaboradores.find(c=>c.id===p.colab);
+  log(actor,'Pedido <b>#'+p.id+'</b> ('+col.nombre+') '+ant+' → <b>'+nuevo+'</b>'+(motivo?' · '+motivo:''));
+}
+function procesarTiempo(){
+  cicloAbierto();
+  S.pedidos.filter(p=>p.estado==='CONFIRMADO').forEach(p=>{
+    if(S.reloj>=p.cutoff) cambiar(p,'EN_PREPARACION','SISTEMA','cutoff vencido');
+  });
+  S.pedidos.filter(p=>p.estado==='ENTREGADO').forEach(p=>{
+    const lim=new Date(p.entregadoEn.getTime()+S.cfg.horasVentana*3600000);
+    if(S.reloj>=lim){
+      if(S.cfg.politicaSilencio==='AUTO_CONFIRMA'){
+        cambiar(p,'RECIBIDO','SISTEMA','ventana de '+S.cfg.horasVentana+' h vencida'); generarCargo(p);
+      } else cambiar(p,'DISPUTA','SISTEMA','sin confirmación en '+S.cfg.horasVentana+' h');
+    }
+  });
+  S.ciclos.filter(c=>c.estado==='ABIERTO').forEach(c=>{ if(S.reloj>=c.corte) cerrarCiclo(c,'SISTEMA'); });
+}
+function generarCargo(p){
+  if(p.cargoId) return;
+  if(p.montoColab<=0){ log('SISTEMA','Pedido <b>#'+p.id+'</b> sin cargo (subsidio total)'); return; }
+  const m=mover('CARGO',p.colab,p.montoColab,'Almuerzo '+fmtCorto(p.fecha),p.id);
+  p.cargoId=m.id;
+  log('SISTEMA','Cargo <b>#'+m.id+'</b> · RD$ '+$(p.montoColab)+' al ciclo '+m.ciclo);
+}
+function cerrarCiclo(c,actor){
+  const mapa={};
+  S.movimientos.filter(m=>m.ciclo===c.id).forEach(m=>{
+    mapa[m.colab]=(mapa[m.colab]||0)+(m.tipo==='CREDITO'?-1:1)*m.monto;
+  });
+  c.descuentos=Object.keys(mapa).map(k=>({colab:+k,monto:mapa[k]})).filter(d=>d.monto!==0);
+  c.estado='CERRADO'; c.cerrado=new Date(S.reloj);
+  log(actor,'Ciclo <b>'+fmtCorto(c.ini)+' – '+fmtCorto(c.fin)+'</b> cerrado · '+c.descuentos.length+' colaboradores');
+  cicloAbierto();
+}
+
+/* ============================================================
+   REGLAS DE PEDIDO
+   ============================================================ */
+function consumoCiclo(colabId){
+  const c=S.ciclos.find(c=>c.estado==='ABIERTO');
+  if(!c) return 0;
+  let t=0;
+  S.movimientos.filter(m=>m.ciclo===c.id&&m.colab===colabId).forEach(m=>{t+=(m.tipo==='CREDITO'?-1:1)*m.monto});
+  S.pedidos.filter(p=>p.colab===colabId&&!p.cargoId&&['CONFIRMADO','EN_PREPARACION','ENTREGADO'].includes(p.estado))
+    .forEach(p=>{t+=p.montoColab});
+  return t;
+}
+function subsidioUsadoDia(colabId,fecha){
+  let t=0;
+  S.pedidos.filter(p=>p.colab===colabId&&p.fecha===fecha&&!['CANCELADO','NO_ENTREGADO'].includes(p.estado))
+    .forEach(p=>{t+=p.subsidio});
+  return t;
+}
+function calcular(colabId,fecha,lineas){
+  const cfg=S.cfg;
+  const bruto=lineas.reduce((s,l)=>s+l.precio*l.cant,0);
+  let sB=0;
+  if(cfg.tipoSubsidio==='MONTO_FIJO') sB=cfg.valorSubsidio;
+  if(cfg.tipoSubsidio==='PORCENTAJE') sB=bruto*cfg.valorSubsidio/100;
+  if(cfg.tipoSubsidio==='TOTAL') sB=bruto;
+  const rest=Math.max(0,cfg.topeDiarioSubsidio-subsidioUsadoDia(colabId,fecha));
+  const subsidio=Math.round(Math.min(sB,bruto,rest)*100)/100;
+  return {bruto, sBruto:sB, subsidio, montoColab:Math.round((bruto-subsidio)*100)/100, restanteDia:rest};
+}
+function validar(colabId,fecha,lineas){
+  const cfg=S.cfg, errs=[], avisos=[];
+  const col=S.colaboradores.find(c=>c.id===colabId);
+  if(!lineas.length) errs.push('Selecciona al menos un plato.');
+  if(fecha&&!esHabil(fechaDe(fecha))) errs.push('El '+fmtFecha(fecha)+' no es día hábil del programa.');
+  if(fecha&&S.reloj>=cutoffDe(fecha)) errs.push('El cutoff de esa fecha venció el '+fmtSello(cutoffDe(fecha))+'.');
+  const dup=S.pedidos.find(p=>p.colab===colabId&&p.fecha===fecha&&!['CANCELADO','NO_ENTREGADO'].includes(p.estado));
+  if(dup) errs.push('Ya existe el pedido #'+dup.id+' para esa fecha.');
+  if(cfg.usarCupos){
+    lineas.forEach(l=>{
+      const md=S.menuDia.find(m=>m.id===l.md);
+      if(md&&md.usado+l.cant>md.cupo) errs.push('Sin cupo: '+prod(md.prod).nombre+' ('+md.usado+'/'+md.cupo+').');
+    });
+  }
+  const calc=calcular(colabId,fecha,lineas);
+  if(!cfg.permiteExcedente&&calc.montoColab>0)
+    errs.push('El programa no permite excedente y este pedido deja RD$ '+$(calc.montoColab)+' a cargo del colaborador.');
+  const consumo=consumoCiclo(colabId);
+  if(consumo+calc.montoColab>cfg.topeCicloColaborador)
+    errs.push('Excede el tope del ciclo: RD$ '+$(consumo+calc.montoColab)+' sobre RD$ '+$(cfg.topeCicloColaborador)+'.');
+  const limSal=col.salario*cfg.pctMaxSalario/100;
+  if(consumo+calc.montoColab>limSal)
+    errs.push('Excede el '+cfg.pctMaxSalario+'% del salario neto (RD$ '+$(limSal)+').');
+  if(calc.restanteDia<calc.sBruto&&calc.restanteDia>0)
+    avisos.push('El tope diario recorta el aporte de la empresa a RD$ '+$(calc.restanteDia)+'.');
+  return {errs,avisos,calc};
+}
+function crearPedido(){
+  const colabId=S.colab, fecha=S.fechaPedido;
+  const col=S.colaboradores.find(c=>c.id===colabId);
+  const lineas=Object.keys(S.carrito).map(k=>{
+    const md=S.menuDia.find(m=>m.id===+k);
+    return {md:md.id, precio:precioEfectivo(md,col.empresa), cant:S.carrito[k], nombre:prod(md.prod).nombre};
+  });
+  const v=validar(colabId,fecha,lineas);
+  if(v.errs.length) return;
+  const p={id:S.seq.p++, colab:colabId, empresa:col.empresa, sup:S.supActivo, punto:col.punto, fecha, lineas,
+    estado:'CONFIRMADO', cutoff:cutoffDe(fecha), bruto:v.calc.bruto, subsidio:v.calc.subsidio,
+    montoColab:v.calc.montoColab, codigo:'R'+Math.random().toString(36).slice(2,7).toUpperCase(),
+    creado:new Date(S.reloj), entregadoEn:null, recibidoEn:null, cargoId:null,
+    hist:[{de:null,a:'CONFIRMADO',ts:new Date(S.reloj),actor:'COLABORADOR'}]};
+  S.pedidos.unshift(p);
+  lineas.forEach(l=>{ S.menuDia.find(m=>m.id===l.md).usado+=l.cant; });
+  log('COLABORADOR','Pedido <b>#'+p.id+'</b> de '+col.nombre+' para el '+fmtCorto(fecha)+' · RD$ '+$(p.bruto));
+  S.carrito={}; render();
+}
+function cancelarPedido(id){
+  const p=S.pedidos.find(x=>x.id===id);
+  if(S.reloj>=p.cutoff) return;
+  p.lineas.forEach(l=>{ const md=S.menuDia.find(m=>m.id===l.md); if(md) md.usado-=l.cant; });
+  cambiar(p,'CANCELADO','COLABORADOR','antes del cutoff'); render();
+}
+function marcarEntregado(id){
+  const p=S.pedidos.find(x=>x.id===id);
+  p.entregadoEn=new Date(S.reloj);
+  cambiar(p,'ENTREGADO','DESPACHO','código '+p.codigo+' escaneado'); render();
+}
+function confirmarRecibido(id){
+  const p=S.pedidos.find(x=>x.id===id);
+  p.recibidoEn=new Date(S.reloj);
+  cambiar(p,'RECIBIDO','COLABORADOR'); generarCargo(p); render();
+}
+const MOTIVOS_DISPUTA = [
+  {v:'NO_LLEGO',    n:'Nunca llegó'},
+  {v:'INCOMPLETO',  n:'Llegó incompleto'},
+  {v:'EQUIVOCADO',  n:'Llegó un plato distinto'},
+  {v:'CALIDAD',     n:'Problema de calidad o estado del alimento'},
+  {v:'OTRO',        n:'Otro motivo'}
+];
+function abrirModalDisputa(id){ S.disputaModal={pedido:id, motivo:'NO_LLEGO', nota:''}; render(); }
+function cerrarModalDisputa(){ S.disputaModal=null; render(); }
+function setMotivoDisputa(v){ S.disputaModal.motivo=v; render(); }
+function setNotaDisputa(v){ S.disputaModal.nota=v; }
+function confirmarDisputa(){
+  const {pedido:id, motivo, nota} = S.disputaModal;
+  const p = S.pedidos.find(x=>x.id===id);
+  const etiqueta = MOTIVOS_DISPUTA.find(m=>m.v===motivo).n;
+  p.disputaMotivo = motivo;
+  p.disputaNota = nota;
+  cambiar(p,'DISPUTA','COLABORADOR', etiqueta + (nota?' · "'+nota+'"':''));
+  S.disputaModal=null;
+  render();
+}
+function resolverDisputa(id,aFavor){
+  const p=S.pedidos.find(x=>x.id===id);
+  if(aFavor){
+    cambiar(p,'NO_ENTREGADO','SOPORTE','resuelta a favor del colaborador');
+    if(p.cargoId){
+      const c=S.ciclos.find(c=>c.estado==='ABIERTO');
+      const orig=S.movimientos.find(m=>m.id===p.cargoId);
+      const m=mover('CREDITO',p.colab,p.montoColab,'Nota de crédito pedido #'+p.id,p.id,p.cargoId);
+      log('SOPORTE','Nota de crédito <b>#'+m.id+'</b> · RD$ '+$(p.montoColab)+
+        (orig.ciclo===c.id?' en el mismo ciclo':' <b>al ciclo siguiente</b> (el original ya cerró)'));
+    }
+  } else { cambiar(p,'RECIBIDO','SOPORTE','resuelta a favor del suplidor'); generarCargo(p); }
+  render();
+}
+function enviarArchivo(cid){
+  const c=S.ciclos.find(x=>x.id===cid); c.estado='ENVIADO';
+  log('RRHH','Archivo del ciclo <b>'+fmtCorto(c.ini)+' – '+fmtCorto(c.fin)+'</b> enviado a nómina'); render();
+}
+function cerrarManual(cid){ cerrarCiclo(S.ciclos.find(x=>x.id===cid),'RRHH'); render(); }
+
+/* ============================================================
+   RELOJ
+   ============================================================ */
+function avanzar(min){ S.reloj=new Date(S.reloj.getTime()+min*60000); procesarTiempo(); render(); }
+function saltarCutoff(){
+  const prox=S.pedidos.filter(p=>p.estado==='CONFIRMADO').map(p=>p.cutoff).sort((a,b)=>a-b)[0];
+  const d=prox||cutoffDe(fechasDisponibles()[0]||iso(S.reloj));
+  if(d>S.reloj){ S.reloj=new Date(d.getTime()+60000); procesarTiempo(); }
+  render();
+}
+function saltarCorte(){
+  const c=S.ciclos.find(c=>c.estado==='ABIERTO');
+  if(c&&c.corte>S.reloj){ S.reloj=new Date(c.corte.getTime()+60000); procesarTiempo(); }
+  render();
+}
+function arrancar(){
+  S=estadoInicial();
+  procesarTiempo();
+  publicarMenu(1,3,'SUPLIDOR');
+  publicarMenu(2,3,'SUPLIDOR');
+}
+function reiniciar(){ arrancar(); render(); }
+function setCfg(k,v){ S.cfg[k]=v; render(); }
+function toggleDia(d){ const i=S.cfg.diasSemana.indexOf(d); if(i>=0)S.cfg.diasSemana.splice(i,1); else S.cfg.diasSemana.push(d); render(); }
+function ir(v){ S.vista=v; render(); }
+function irSub(v){ S.subSup=v; render(); }
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function foto(cat,size){
+  const k=CATS[cat]||CATS.criollo;
+  return `<svg viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true"
+    style="display:block;flex:none;border-radius:5px;background:${k.b}">
+    <circle cx="32" cy="32" r="21" fill="none" stroke="${k.c}" stroke-width="1.5" opacity=".4"/>
+    <circle cx="32" cy="32" r="14.5" fill="${k.c}" opacity=".16"/>
+    <circle cx="27" cy="28.5" r="5.6" fill="${k.c}" opacity=".5"/>
+    <circle cx="37" cy="34" r="4.2" fill="${k.c}" opacity=".36"/>
+    <rect x="28.5" y="36.5" width="9.5" height="3.4" rx="1.7" fill="${k.c}" opacity=".44"/>
+  </svg>`;
+}
+
+const VISTAS=[
+  {k:'config', n:'Configuración'},
+  {k:'sup',    n:'Portal del suplidor'},
+  {k:'colab',  n:'App del colaborador'},
+  {k:'rrhh',   n:'RRHH y nómina'},
+  {k:'plat',   n:'Plataforma'},
+  {k:'log',    n:'Trazabilidad'}
+];
+
+function render(){
+  const d=S.reloj;
+  document.getElementById('rFecha').textContent=DIAS[d.getDay()]+', '+d.getDate()+' '+MESES[d.getMonth()]+' '+d.getFullYear();
+  document.getElementById('rHora').textContent=fmtHora(d);
+
+  const c=S.ciclos.find(c=>c.estado==='ABIERTO'), t=[];
+  if(c) t.push('<span class="tira">Ciclo <b>'+fmtCorto(c.ini)+'–'+fmtCorto(c.fin)+'</b> · corte '+fmtSello(c.corte)+'</span>');
+  const hoy=iso(d);
+  if(esHabil(fechaDe(hoy))){
+    const co=cutoffDe(hoy), mins=Math.round((co-d)/60000);
+    if(mins>0) t.push('<span class="tira'+(mins<120?' urg':'')+'">Cutoff de hoy <b>'+fmtHora(co)+'</b> · faltan '+Math.floor(mins/60)+'h '+(mins%60)+'m</span>');
+    else t.push('<span class="tira">Cutoff de hoy cerrado a las <b>'+fmtHora(co)+'</b></span>');
+  } else t.push('<span class="tira">Hoy <b>no es día hábil</b></span>');
+  SUPLIDORES.forEach(s=>{
+    const sm=fechasSinMenu(s.id);
+    if(sm.length) t.push('<span class="tira urg">'+s.nombre+': <b>'+sm.length+'</b> día(s) sin menú</span>');
+  });
+  const pend=S.pedidos.filter(p=>p.estado==='ENTREGADO').length;
+  if(pend) t.push('<span class="tira urg"><b>'+pend+'</b> entrega(s) sin confirmar</span>');
+  const dis=S.pedidos.filter(p=>p.estado==='DISPUTA').length;
+  if(dis) t.push('<span class="tira urg"><b>'+dis+'</b> en disputa</span>');
+  document.getElementById('rTiras').innerHTML=t.join('');
+
+  const cnt={
+    colab:S.pedidos.filter(p=>['CONFIRMADO','ENTREGADO','DISPUTA'].includes(p.estado)).length,
+    sup:S.pedidos.filter(p=>p.estado==='EN_PREPARACION').length,
+    rrhh:S.pedidos.filter(p=>p.estado==='DISPUTA').length+S.ciclos.filter(x=>x.estado==='CERRADO').length,
+    log:S.eventos.length
+  };
+  document.getElementById('nav').innerHTML=VISTAS.map(v=>
+    '<button aria-current="'+(S.vista===v.k)+'" onclick="ir(\''+v.k+'\')">'+v.n+
+    (cnt[v.k]?'<span class="cnt">'+cnt[v.k]+'</span>':'')+'</button>').join('');
+
+  document.getElementById('app').innerHTML=({
+    config:vConfig, sup:vSup, colab:vColab, rrhh:vRRHH, plat:vPlat, log:vLog
+  })[S.vista]();
+}
+
+/* ---------- Configuración ---------- */
+function vConfig(){
+  const cfg=S.cfg, ej=350;
+  const sB=cfg.tipoSubsidio==='MONTO_FIJO'?cfg.valorSubsidio:cfg.tipoSubsidio==='PORCENTAJE'?ej*cfg.valorSubsidio/100:ej;
+  const sub=Math.min(sB,ej,cfg.topeDiarioSubsidio);
+  return `
+  <h2>Configuración del contrato</h2>
+  <p class="sub">Cada parámetro vive en la base por empresa. Cámbialos y observa cómo se recalculan
+  la elegibilidad, el subsidio, la publicación del menú y el cierre de nómina.</p>
+  <div class="grid g2">
+    <div class="card">
+      <h3>Programa de beneficio</h3>
+      <div class="campo"><label>Tipo de subsidio</label>
+        <select onchange="setCfg('tipoSubsidio',this.value)">
+          <option value="MONTO_FIJO" ${cfg.tipoSubsidio==='MONTO_FIJO'?'selected':''}>Monto fijo por pedido</option>
+          <option value="PORCENTAJE" ${cfg.tipoSubsidio==='PORCENTAJE'?'selected':''}>Porcentaje del consumo</option>
+          <option value="TOTAL" ${cfg.tipoSubsidio==='TOTAL'?'selected':''}>Cobertura total</option>
+        </select></div>
+      ${cfg.tipoSubsidio!=='TOTAL'?`<div class="campo">
+        <label>${cfg.tipoSubsidio==='PORCENTAJE'?'Porcentaje que cubre la empresa (%)':'Aporte de la empresa por pedido (RD$)'}</label>
+        <input type="number" value="${cfg.valorSubsidio}" onchange="setCfg('valorSubsidio',+this.value)"></div>`:''}
+      <div class="fila">
+        <div class="campo"><label>Tope diario de subsidio</label>
+          <input type="number" value="${cfg.topeDiarioSubsidio}" onchange="setCfg('topeDiarioSubsidio',+this.value)">
+          <div class="hint">Máximo que aporta la empresa por día.</div></div>
+        <div class="campo"><label>Tope de descuento por ciclo</label>
+          <input type="number" value="${cfg.topeCicloColaborador}" onchange="setCfg('topeCicloColaborador',+this.value)">
+          <div class="hint">Máximo a cargo del colaborador.</div></div>
+      </div>
+      <div class="campo"><label>Límite de endeudamiento (% del salario neto)</label>
+        <input type="number" value="${cfg.pctMaxSalario}" onchange="setCfg('pctMaxSalario',+this.value)">
+        <div class="hint">Prueba con Héctor Objío (RD$ 21,000) para ver el bloqueo.</div></div>
+      <div class="check"><input type="checkbox" id="pex" ${cfg.permiteExcedente?'checked':''} onchange="setCfg('permiteExcedente',this.checked)">
+        <label for="pex" style="margin:0">Permitir excedente a cargo del colaborador</label></div>
+      <div class="campo"><label>Días hábiles del programa</label>
+        <div class="dow">${DIAS_C.map((n,i)=>`<button aria-pressed="${cfg.diasSemana.includes(i)}" onclick="toggleDia(${i})">${n}</button>`).join('')}</div></div>
+    </div>
+
+    <div class="card">
+      <h3>Ruta de servicio y cutoff</h3>
+      <div class="fila">
+        <div class="campo"><label>Hora de cutoff</label>
+          <input type="time" value="${cfg.horaCutoff}" onchange="setCfg('horaCutoff',this.value)"></div>
+        <div class="campo"><label>Días hábiles de anticipación</label>
+          <input type="number" min="0" max="3" value="${cfg.diasAnticipacion}" onchange="setCfg('diasAnticipacion',+this.value)"></div>
+      </div>
+      <div class="campo"><label>Hora estimada de entrega</label>
+        <input type="time" value="${cfg.horaEntrega}" onchange="setCfg('horaEntrega',this.value)"></div>
+      <div class="check"><input type="checkbox" id="cup" ${cfg.usarCupos?'checked':''} onchange="setCfg('usarCupos',this.checked)">
+        <label for="cup" style="margin:0">Aplicar cupos por plato</label></div>
+      <h3 style="margin-top:20px">Política de confirmación</h3>
+      <div class="campo"><label>Si el colaborador no confirma</label>
+        <select onchange="setCfg('politicaSilencio',this.value)">
+          <option value="AUTO_CONFIRMA" ${cfg.politicaSilencio==='AUTO_CONFIRMA'?'selected':''}>Se da por recibido y se cobra</option>
+          <option value="AUTO_DISPUTA" ${cfg.politicaSilencio==='AUTO_DISPUTA'?'selected':''}>Pasa a disputa y no se cobra</option>
+        </select>
+        <div class="hint">Define de qué lado cae el riesgo de la entrega fallida.</div></div>
+      <div class="campo"><label>Ventana de confirmación (horas)</label>
+        <input type="number" value="${cfg.horasVentana}" onchange="setCfg('horasVentana',+this.value)"></div>
+    </div>
+
+    <div class="card">
+      <h3>Menú</h3>
+      <div class="check"><input type="checkbox" id="apm" ${cfg.requiereAprobacionMenu?'checked':''} onchange="setCfg('requiereAprobacionMenu',this.checked)">
+        <label for="apm" style="margin:0">La empresa aprueba el menú antes de publicarlo<br>
+        <span style="color:var(--muted);font-weight:400">Añade el estado EN REVISIÓN entre el borrador y la publicación.</span></label></div>
+      <div class="fila">
+        <div class="campo"><label>Semanas a publicar</label>
+          <input type="number" min="1" max="6" value="${cfg.semanasPublicacion}" onchange="setCfg('semanasPublicacion',+this.value)"></div>
+        <div class="campo"><label>Aviso por menú faltante (h)</label>
+          <input type="number" value="${cfg.horasAvisoPublicacion}" onchange="setCfg('horasAvisoPublicacion',+this.value)"></div>
+      </div>
+      <h3 style="margin-top:20px">Ciclo de nómina</h3>
+      <div class="fila">
+        <div class="campo"><label>Frecuencia</label>
+          <select onchange="setCfg('frecuenciaNomina',this.value)">
+            <option value="QUINCENAL" ${cfg.frecuenciaNomina==='QUINCENAL'?'selected':''}>Quincenal</option>
+            <option value="MENSUAL" ${cfg.frecuenciaNomina==='MENSUAL'?'selected':''}>Mensual</option>
+          </select></div>
+        <div class="campo"><label>Días antes del corte</label>
+          <input type="number" min="0" max="5" value="${cfg.diasAntesCorte}" onchange="setCfg('diasAntesCorte',+this.value)"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Modelo comercial</h3>
+      <div class="campo"><label>Relación con el suplidor</label>
+        <select onchange="setCfg('modeloNegocio',this.value)">
+          <option value="AGENTE" ${cfg.modeloNegocio==='AGENTE'?'selected':''}>Agente · el suplidor factura a la empresa</option>
+          <option value="INTERMEDIARIO" ${cfg.modeloNegocio==='INTERMEDIARIO'?'selected':''}>Intermediario · yo facturo a la empresa</option>
+        </select></div>
+      <div class="fila">
+        <div class="campo"><label>Comisión sobre GMV (%)</label>
+          <input type="number" value="${cfg.tasaComision}" onchange="setCfg('tasaComision',+this.value)"></div>
+        <div class="campo"><label>Fee por colaborador/mes</label>
+          <input type="number" value="${cfg.feePorColaborador}" onchange="setCfg('feePorColaborador',+this.value)"></div>
+      </div>
+      <div class="campo"><label>ITBIS (%)</label>
+        <input type="number" value="${cfg.itbis}" onchange="setCfg('itbis',+this.value)"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>Efecto sobre un plato de RD$ ${$(ej)}</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:28px">
+      <div style="min-width:230px;flex:1">
+        <div class="dl"><span>Precio del plato</span><span class="v">${$(ej)}</span></div>
+        <div class="dl sub"><span>Aporte de la empresa</span><span class="v">− ${$(sub)}</span></div>
+        <div class="dl tot"><span>Descuento de nómina</span><span class="v">${$(ej-sub)}</span></div>
+      </div>
+      <div style="min-width:250px;flex:1;font-size:13px;color:var(--muted);line-height:1.6">
+        Un colaborador puede acumular hasta <b class="mono" style="color:var(--ink)">RD$ ${$(cfg.topeCicloColaborador)}</b>
+        por ciclo, siempre que no supere el <b>${cfg.pctMaxSalario}%</b> de su salario neto.
+        Para Héctor Objío el techo real es
+        <b class="mono" style="color:var(--ink)">RD$ ${$(Math.min(cfg.topeCicloColaborador,21000*cfg.pctMaxSalario/100))}</b>.
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------- Portal del suplidor ---------- */
+const SUBS=[{k:'catalogo',n:'Catálogo'},{k:'plantilla',n:'Plantilla semanal'},
+            {k:'publicacion',n:'Publicación'},{k:'preparacion',n:'Preparación'},{k:'liquidacion',n:'Liquidación'}];
+
+function vSup(){
+  const sup=SUPLIDORES.find(s=>s.id===S.supActivo)||SUPLIDORES[0];
+  const sinMenu=fechasSinMenu(sup.id);
+  return `
+  <h2>Portal del suplidor</h2>
+  <p class="sub">El suplidor es dueño de su catálogo y de su programación. La plataforma no carga menús:
+  se define una plantilla semanal una vez y se publica desde ahí, marcando solo las excepciones.</p>
+
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    ${SUPLIDORES.map(s=>`<button class="btn sm ${s.id===sup.id?'':'sec'}" onclick="S.supActivo=${s.id};S.semanaPlant=1;render()">${s.nombre}</button>`).join('')}
+  </div>
+
+  ${sinMenu.length?`<div class="aviso at" style="margin-bottom:16px">
+    <b>Menú sin publicar</b> para ${sinMenu.map(f=>fmtCorto(f)).join(', ')}. El cutoff de esas fechas está a menos de
+    ${S.cfg.horasAvisoPublicacion} h. Si nadie publica, los colaboradores abren la app y ven una pantalla vacía.
+  </div>`:''}
+
+  <div class="subnav">
+    ${SUBS.map(t=>`<button aria-current="${S.subSup===t.k}" onclick="irSub('${t.k}')">${t.n}</button>`).join('')}
+  </div>
+  ${({catalogo:sCatalogo, plantilla:sPlantilla, publicacion:sPublicacion,
+      preparacion:sPreparacion, liquidacion:sLiquidacion})[S.subSup](sup)}`;
+}
+
+function sCatalogo(sup){
+  const items=S.catalogo.filter(p=>p.sup===sup.id);
+  return `
+  <div class="card" style="margin-bottom:16px">
+    <h3>Catálogo permanente · ${items.length} productos</h3>
+    <p style="font-size:12.5px;color:var(--muted);margin:0 0 14px;line-height:1.5">
+      Esto es el repertorio, no la programación. Cada producto se crea una vez con foto, categoría, alérgenos
+      y precio base, y se reutiliza cada vez que aparece en el menú. En el mockup se muestra un marcador
+      de posición por categoría en lugar de fotografía real.
+    </p>
+    <div class="cat-grid">
+      ${items.map(p=>`
+        <div class="prod ${p.off?'off':''}">
+          ${foto(p.cat,58)}
+          <div class="b">
+            <div class="nm">${p.nombre}</div>
+            <div class="dt">${p.desc}</div>
+            <div>
+              <span class="tag" style="background:${CATS[p.cat].b};color:${CATS[p.cat].c}">${CATS[p.cat].n}</span>
+              ${p.alerg.map(a=>`<span class="tag">${a}</span>`).join('')}
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:8px">
+              <span style="font-size:11px;color:var(--muted)">Base</span>
+              <input type="number" class="mini" style="width:74px" value="${p.precio}" onchange="setPrecioBase(${p.id},this.value)">
+              <button class="btn sec xs" onclick="togglePlato(${p.id})">${p.off?'Activar':'Pausar'}</button>
+            </div>
+          </div>
+        </div>`).join('')}
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>Agregar producto</h3>
+      <div class="campo"><label>Nombre</label>
+        <input value="${S.nuevo.nombre}" oninput="S.nuevo.nombre=this.value" placeholder="Ej. Res guisada con víveres"></div>
+      <div class="fila">
+        <div class="campo"><label>Categoría</label>
+          <select onchange="S.nuevo.cat=this.value">
+            ${Object.keys(CATS).map(k=>`<option value="${k}" ${S.nuevo.cat===k?'selected':''}>${CATS[k].n}</option>`).join('')}
+          </select></div>
+        <div class="campo"><label>Precio base</label>
+          <input type="number" value="${S.nuevo.precio}" oninput="S.nuevo.precio=this.value"></div>
+      </div>
+      <button class="btn ok" onclick="agregarProducto()">Agregar al catálogo</button>
+    </div>
+
+    <div class="card">
+      <h3>Precios por contrato</h3>
+      <p style="font-size:12.5px;color:var(--muted);margin:0 0 12px;line-height:1.5">
+        El mismo plato cuesta distinto según la empresa. Por eso el precio final no vive en el producto
+        ni en el menú, sino que se deriva del contrato.
+      </p>
+      ${CONTRATOS.filter(c=>c.sup===sup.id).map(c=>{
+        const e=EMPRESAS.find(e=>e.id===c.empresa), ej=items[0];
+        return `<div class="kv">
+          <span>${e.nombre}<br><span style="font-size:11px;color:var(--muted)" class="mono">RNC ${e.rnc}</span></span>
+          <span class="v">${c.ajuste===0?'lista':c.ajuste+'%'}
+            ${ej?'<br><span style="font-size:11px;color:var(--muted);font-weight:400">'+ej.nombre+': '+$(ej.precio*(1+c.ajuste/100))+'</span>':''}</span>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+function sPlantilla(sup){
+  const pl=S.plantillas[sup.id];
+  const dias=S.cfg.diasSemana.filter(d=>d>=1&&d<=6).sort();
+  const cat=S.catalogo.filter(p=>p.sup===sup.id&&!p.off);
+  return `
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between">
+      <div>
+        <h3 style="border:none;padding:0;margin:0 0 4px">Plantilla semanal</h3>
+        <p style="font-size:12.5px;color:var(--muted);margin:0;max-width:62ch;line-height:1.5">
+          Nadie carga un menú todos los días. Se define la rotación una vez y la publicación genera las fechas
+          automáticamente. Si obligas al suplidor a cargar el menú a diario, en un mes vuelve al grupo de WhatsApp.
+        </p>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-end">
+        <div class="campo" style="margin:0"><label>Rotación</label>
+          <select onchange="setRotacion(${sup.id},this.value)" style="width:auto">
+            ${[1,2,3].map(r=>`<option value="${r}" ${pl.rotacion===r?'selected':''}>${r} semana${r>1?'s':''}</option>`).join('')}
+          </select></div>
+        ${pl.rotacion>1?`<div class="campo" style="margin:0"><label>Editando</label>
+          <select onchange="S.semanaPlant=+this.value;render()" style="width:auto">
+            ${Array.from({length:pl.rotacion},(_,i)=>i+1).map(w=>`<option value="${w}" ${S.semanaPlant===w?'selected':''}>Semana ${w}</option>`).join('')}
+          </select></div>`:''}
+      </div>
+    </div>
+  </div>
+
+  <div class="semana">
+    ${dias.map(d=>{
+      const items=plantillaItems(sup.id,S.semanaPlant,d);
+      return `<div class="dia">
+        <div class="dia-h"><span>${DIAS[d]}</span><span class="mono" style="font-weight:400;color:var(--muted)">${items.length}</span></div>
+        <div class="dia-b">
+          ${items.length?items.map(it=>{
+            const p=prod(it.p);
+            return `<div class="item">
+              ${foto(p.cat,26)}
+              <div class="x">
+                <div style="font-weight:500;line-height:1.25">${p.nombre}</div>
+                <div style="display:flex;gap:4px;margin-top:4px;align-items:center">
+                  <input type="number" class="mini" style="width:54px" value="${it.pr}" title="Precio de lista"
+                    onchange="setItemCampo(${sup.id},${S.semanaPlant},${d},${it.p},'pr',this.value)">
+                  <input type="number" class="mini" style="width:42px" value="${it.cu}" title="Cupo"
+                    onchange="setItemCampo(${sup.id},${S.semanaPlant},${d},${it.p},'cu',this.value)">
+                  <button class="btn sec xs" onclick="quitarDePlantilla(${sup.id},${S.semanaPlant},${d},${it.p})">×</button>
+                </div>
+              </div>
+            </div>`;
+          }).join(''):'<div style="font-size:11.5px;color:var(--muted);padding:8px 0">Sin platos</div>'}
+          <select onchange="agregarAPlantilla(${sup.id},${S.semanaPlant},${d},this.value)"
+            style="width:100%;margin-top:8px;padding:4px 6px;border:1px dashed var(--rule);border-radius:4px;background:transparent;font-size:11.5px;color:var(--muted)">
+            <option value="">+ agregar plato</option>
+            ${cat.map(p=>`<option value="${p.id}">${p.nombre}</option>`).join('')}
+          </select>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin-top:14px;max-width:72ch;line-height:1.5">
+    Los dos campos numéricos de cada plato son precio de lista y cupo. El precio que ve cada empresa
+    sale de aplicarle el ajuste de su contrato. Cambiar la plantilla no altera los días ya publicados:
+    para eso están las excepciones en la pestaña de publicación.
+  </p>`;
+}
+
+function sPublicacion(sup){
+  const fechas=proximasFechas(S.cfg.semanasPublicacion*5);
+  return `
+  <div class="card" style="margin-bottom:16px">
+    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between">
+      <div>
+        <h3 style="border:none;padding:0;margin:0 0 4px">Publicación del menú</h3>
+        <p style="font-size:12.5px;color:var(--muted);margin:0;max-width:64ch;line-height:1.5">
+          Genera <code class="mono">menu_dia</code> desde la plantilla, saltando feriados y fechas con el cutoff
+          vencido. Es idempotente: publicar dos veces no duplica nada.
+        </p>
+      </div>
+      <button class="btn ok" onclick="publicarMenu(${sup.id},${S.cfg.semanasPublicacion},'SUPLIDOR');render()">
+        Publicar ${S.cfg.semanasPublicacion} semanas</button>
+    </div>
+  </div>
+
+  ${fechas.map(f=>{
+    const filas=menuDe(sup.id,f), est=estadoMenu(sup.id,f), co=cutoffDe(f);
+    return `<div class="pub-fecha">
+      <div class="pub-h">
+        <div>
+          <b style="text-transform:capitalize">${fmtFecha(f)}</b>
+          <span style="font-size:11.5px;color:var(--muted)" class="mono"> · semana tipo ${semanaTipo(f,sup.id)} · cutoff ${fmtSello(co)}</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="est e-${est}">${est.replace('_',' ')}</span>
+          ${est==='EN_REVISION'?`<button class="btn sm" onclick="aprobarMenu(${sup.id},'${f}')">Aprobar</button>`:''}
+        </div>
+      </div>
+      ${filas.length?`<table>
+        <tr><th>Plato</th><th class="num">Lista</th><th class="num">Cupo</th><th class="num">Pedido</th><th></th></tr>
+        ${filas.map(m=>{
+          const p=prod(m.prod), agotado=m.usado>=m.cupo;
+          return `<tr>
+            <td><span style="display:flex;gap:8px;align-items:center">${foto(p.cat,24)}<span>${p.nombre}</span></span></td>
+            <td class="num">${$(m.precio)}</td>
+            <td class="num">${m.cupo}</td>
+            <td class="num ${agotado?'neg':''}">${m.usado}</td>
+            <td style="text-align:right;white-space:nowrap">
+              ${est!=='CONGELADO'&&!agotado?`<button class="btn sec xs" onclick="agotarPlato(${m.id})">Agotar</button>`:''}
+              ${est!=='CONGELADO'&&m.usado===0?`<button class="btn sec xs" onclick="quitarPlato(${m.id})">Quitar</button>`:''}
+            </td></tr>`;
+        }).join('')}
+      </table>`:`<div style="font-size:12.5px;color:var(--muted);padding:6px 0">
+        Sin menú publicado. ${S.reloj>=co?'El cutoff ya venció, esta fecha quedó cerrada.':'Publica desde la plantilla.'}
+      </div>`}
+    </div>`;
+  }).join('')}`;
+}
+
+function sPreparacion(sup){
+  const fechas=[...new Set(S.pedidos.filter(p=>p.sup===sup.id).map(p=>p.fecha))].sort();
+  if(!S.fechaSup||!fechas.includes(S.fechaSup)) S.fechaSup=fechas[0]||null;
+  const delDia=S.pedidos.filter(p=>p.fecha===S.fechaSup&&p.sup===sup.id&&
+    ['EN_PREPARACION','ENTREGADO','RECIBIDO','DISPUTA','NO_ENTREGADO'].includes(p.estado));
+  const porPunto={};
+  delDia.forEach(p=>{(porPunto[p.punto]=porPunto[p.punto]||[]).push(p)});
+  return `
+  <div class="card">
+    <h3>Lista de preparación</h3>
+    <p style="font-size:12.5px;color:var(--muted);margin:0 0 14px;line-height:1.5">
+      Se congela al vencer el cutoff. El rol <b>DESPACHO</b> solo ve esta pantalla: escanea y confirma,
+      sin acceso a precios ni liquidaciones.
+    </p>
+    ${fechas.length?`<div class="campo"><label>Fecha de servicio</label>
+      <select onchange="S.fechaSup=this.value;render()" style="max-width:300px">
+        ${fechas.map(f=>`<option value="${f}" ${f===S.fechaSup?'selected':''}>${fmtFecha(f)}</option>`).join('')}
+      </select></div>`:''}
+    ${Object.keys(porPunto).length?Object.keys(porPunto).map(pt=>{
+      const ps=porPunto[pt], cons={};
+      ps.forEach(p=>p.lineas.forEach(l=>{cons[l.nombre]=(cons[l.nombre]||0)+l.cant}));
+      return `<div style="margin-bottom:22px">
+        <div class="eyebrow" style="margin-bottom:8px">${PUNTOS.find(p=>p.id===+pt).nombre} · entrega ${S.cfg.horaEntrega}</div>
+        <div style="background:var(--paper);border:1px solid var(--rule);border-radius:var(--r);padding:11px;margin-bottom:10px">
+          ${Object.keys(cons).map(n=>`<div class="kv"><span>${n}</span><span class="v">${cons[n]}</span></div>`).join('')}
+        </div>
+        <table>
+          <tr><th>Colaborador</th><th>Código</th><th>Estado</th><th></th></tr>
+          ${ps.map(p=>{
+            const c=S.colaboradores.find(x=>x.id===p.colab);
+            return `<tr>
+              <td>${c.nombre}<br><span class="mono" style="font-size:11px;color:var(--muted)">${c.cod}</span></td>
+              <td class="mono">${p.codigo}</td>
+              <td><span class="est e-${p.estado}">${p.estado}</span></td>
+              <td style="text-align:right">${p.estado==='EN_PREPARACION'?`<button class="btn sm" onclick="marcarEntregado(${p.id})">Escanear</button>`:''}</td>
+            </tr>`}).join('')}
+        </table>
+      </div>`;
+    }).join(''):'<div class="vacio">Nada por preparar. Crea pedidos y adelanta el reloj hasta pasar el cutoff.</div>'}
+  </div>`;
+}
+
+function sLiquidacion(sup){
+  const liq=S.pedidos.filter(p=>p.sup===sup.id&&p.estado==='RECIBIDO');
+  const bruto=liq.reduce((s,p)=>s+p.bruto,0);
+  const itbis=bruto*S.cfg.itbis/100;
+  const com=S.cfg.modeloNegocio==='INTERMEDIARIO'?bruto*S.cfg.tasaComision/100:0;
+  const entregados=S.pedidos.filter(p=>p.sup===sup.id&&['ENTREGADO','RECIBIDO','DISPUTA','NO_ENTREGADO'].includes(p.estado)).length;
+  const tasa=entregados?Math.round(liq.length/entregados*100):100;
+  return `<div class="grid g2">
+    <div class="card">
+      <h3>Liquidación acumulada</h3>
+      <div class="kv"><span>Pedidos confirmados por el colaborador</span><span class="v">${liq.length}</span></div>
+      <div class="kv"><span>Monto bruto</span><span class="v">${$(bruto)}</span></div>
+      <div class="kv"><span>ITBIS ${S.cfg.itbis}% incluido</span><span class="v">${$(itbis)}</span></div>
+      ${com?`<div class="kv"><span>Comisión ${S.cfg.tasaComision}%</span><span class="v neg">− ${$(com)}</span></div>`:''}
+      <div class="kv" style="border-top:1px solid var(--rule);margin-top:6px;padding-top:9px;font-weight:600">
+        <span>A pagar al suplidor</span><span class="v">RD$ ${$(bruto-com)}</span></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:12px;line-height:1.5">
+        ${S.cfg.modeloNegocio==='AGENTE'
+          ?'Modelo agente: el suplidor factura directo a la empresa con su NCF. Tu ingreso es el fee mensual por colaborador activo.'
+          :'Modelo intermediario: el suplidor te factura a ti (entra a tu 606) y tú facturas a la empresa (sale en tu 607).'}
+      </div>
+    </div>
+    <div class="card">
+      <h3>Calidad de servicio</h3>
+      <div class="kv"><span>Tasa de confirmación</span><span class="v" style="color:${tasa<80?'var(--granate)':'var(--verde)'}">${tasa}%</span></div>
+      <div class="kv"><span>Entregas marcadas</span><span class="v">${entregados}</span></div>
+      <div class="kv"><span>En disputa</span><span class="v">${S.pedidos.filter(p=>p.sup===sup.id&&p.estado==='DISPUTA').length}</span></div>
+      <div class="kv"><span>No entregadas</span><span class="v">${S.pedidos.filter(p=>p.sup===sup.id&&p.estado==='NO_ENTREGADO').length}</span></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:12px;line-height:1.5">
+        El suplidor solo cobra lo que el colaborador confirmó, así que tiene incentivo directo
+        en que la entrega ocurra de verdad.
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---------- App del colaborador ---------- */
+function vColab(){
+  const col=S.colaboradores.find(c=>c.id===S.colab);
+  const fechas=fechasDisponibles();
+  if(!S.fechaPedido||!fechas.includes(S.fechaPedido)) S.fechaPedido=fechas[0]||null;
+  const sups=SUPLIDORES.filter(s=>s.puntos.includes(col.punto));
+  if(!sups.find(s=>s.id===S.supActivo)) S.supActivo=sups[0]?sups[0].id:null;
+
+  const menu=S.fechaPedido?menuDe(S.supActivo,S.fechaPedido).filter(m=>m.estado==='PUBLICADO'):[];
+  const lineas=Object.keys(S.carrito).map(k=>{
+    const md=S.menuDia.find(m=>m.id===+k);
+    return {md:md.id, precio:precioEfectivo(md,col.empresa), cant:S.carrito[k], nombre:prod(md.prod).nombre};
+  });
+  const v=S.fechaPedido?validar(S.colab,S.fechaPedido,lineas)
+    :{errs:['No hay fechas con el cutoff abierto.'],avisos:[],calc:{bruto:0,subsidio:0,montoColab:0}};
+  const consumo=consumoCiclo(S.colab);
+  const tope=Math.min(S.cfg.topeCicloColaborador,col.salario*S.cfg.pctMaxSalario/100);
+  const pct=Math.min(100,tope?consumo/tope*100:0);
+  const mis=S.pedidos.filter(p=>p.colab===S.colab);
+  const aj=ajusteContrato(S.supActivo,col.empresa);
+
+  return `
+  <h2>App del colaborador</h2>
+  <p class="sub">Lee el menú publicado por el suplidor y le aplica el ajuste del contrato de su empresa.
+  Si el suplidor no publicó, la pantalla lo dice en vez de quedar en blanco.</p>
+
+  <div class="colab-wrap">
+    <div>
+      <div class="selcolab">
+        ${S.colaboradores.map(c=>`
+          <button aria-pressed="${c.id===S.colab}" onclick="S.colab=${c.id};S.carrito={};render()">
+            <span>${c.nombre}<br><span style="font-size:11px;opacity:.7" class="mono">${c.cod} · ${PUNTOS.find(p=>p.id===c.punto).nombre.split('·')[0].trim()}</span></span>
+            <span class="sal">RD$ ${$(c.salario)}</span>
+          </button>`).join('')}
+      </div>
+
+      <div class="tel"><div class="tel-in">
+        <div class="tel-top">
+          <div class="n">${col.nombre}</div>
+          <div class="s">${PUNTOS.find(p=>p.id===col.punto).nombre}</div>
+        </div>
+        <div class="tel-body">
+          <div class="eyebrow" style="margin-bottom:7px">Pedir para</div>
+          <select onchange="S.fechaPedido=this.value;S.carrito={};render()"
+            style="width:100%;padding:7px 9px;border:1px solid var(--rule);border-radius:4px;background:var(--paper);margin-bottom:12px">
+            ${fechas.map(f=>`<option value="${f}" ${f===S.fechaPedido?'selected':''}>${fmtFecha(f)} · cierra ${fmtHora(cutoffDe(f))}</option>`).join('')}
+            ${!fechas.length?'<option>Sin fechas disponibles</option>':''}
+          </select>
+
+          ${sups.length>1?`<div style="display:flex;gap:5px;margin-bottom:12px">
+            ${sups.map(s=>`<button class="btn sm ${s.id===S.supActivo?'':'sec'}" style="flex:1" onclick="S.supActivo=${s.id};S.carrito={};render()">${s.nombre}</button>`).join('')}
+          </div>`:''}
+
+          ${!S.fechaPedido?'':menu.length?menu.map(m=>{
+            const p=prod(m.prod), ago=S.cfg.usarCupos&&m.usado>=m.cupo, sel=S.carrito[m.id];
+            return `<div class="plato ${sel?'sel':''} ${ago?'ago':''}"
+              ${ago?'':`onclick="S.carrito=${sel?'{}':'{'+m.id+':1}'};render()"`}>
+              ${foto(p.cat,42)}
+              <div class="info">
+                <div class="nm">${p.nombre}</div>
+                <div class="dt">${p.desc}${S.cfg.usarCupos?` · ${Math.max(0,m.cupo-m.usado)} de ${m.cupo}`:''}</div>
+              </div>
+              <div class="pr">${$(precioEfectivo(m,col.empresa))}</div>
+            </div>`;
+          }).join(''):`<div class="aviso at">El suplidor todavía no publicó el menú del ${fmtFecha(S.fechaPedido)}.
+            Ve al portal del suplidor y publícalo desde la plantilla.</div>`}
+
+          ${aj!==0&&menu.length?`<div style="font-size:11px;color:var(--muted);margin:-2px 0 10px">
+            Precios con el ajuste de ${aj}% del contrato de ${EMPRESAS.find(e=>e.id===col.empresa).nombre}.</div>`:''}
+
+          ${lineas.length?`<div class="desglose">
+            <div class="dl"><span>Total del pedido</span><span class="v">${$(v.calc.bruto)}</span></div>
+            <div class="dl sub"><span>Cubre la empresa</span><span class="v">− ${$(v.calc.subsidio)}</span></div>
+            <div class="dl tot"><span>Se te descuenta</span><span class="v">${$(v.calc.montoColab)}</span></div>
+          </div>`:''}
+
+          ${lineas.length?v.errs.map(e=>`<div class="aviso no">${e}</div>`).join(''):''}
+          ${v.avisos.map(e=>`<div class="aviso at">${e}</div>`).join('')}
+
+          <button class="btn ok" style="width:100%;margin-top:6px" ${v.errs.length?'disabled':''} onclick="crearPedido()">
+            Confirmar pedido</button>
+
+          <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--rule-2)">
+            <div style="display:flex;justify-content:space-between;font-size:12.5px">
+              <span>Comprometido este ciclo</span>
+              <span class="mono">RD$ ${$(consumo)} <span style="color:var(--muted)">/ ${$(tope)}</span></span>
+            </div>
+            <div class="medidor"><i class="${pct>90?'tope':pct>70?'alto':''}" style="width:${pct}%"></i></div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="card">
+      <h3>Mis pedidos</h3>
+      ${mis.length?`<table>
+        <tr><th>#</th><th>Fecha</th><th>Plato</th><th>Estado</th><th class="num">A cargo</th><th></th></tr>
+        ${mis.map(p=>`<tr>
+          <td class="mono">${p.id}</td>
+          <td>${fmtCorto(p.fecha)}</td>
+          <td>${p.lineas.map(l=>l.nombre).join(', ')}<br><span style="font-size:11px;color:var(--muted)" class="mono">retiro ${p.codigo}</span></td>
+          <td><span class="est e-${p.estado}">${p.estado}</span></td>
+          <td class="num">${$(p.montoColab)}</td>
+          <td style="text-align:right;white-space:nowrap">
+            ${p.estado==='CONFIRMADO'?`<button class="btn sec sm" onclick="cancelarPedido(${p.id})">Cancelar</button>`:''}
+            ${p.estado==='ENTREGADO'?`<button class="btn ok sm" onclick="confirmarRecibido(${p.id})">Recibí</button>
+              <button class="btn dan sm" onclick="abrirModalDisputa(${p.id})">No llegó</button>`:''}
+            ${p.estado==='RECIBIDO'&&p.cargoId?`<button class="btn dan sm" onclick="abrirModalDisputa(${p.id})">Reclamar</button>`:''}
+          </td></tr>`).join('')}
+      </table>`:'<div class="vacio">Sin pedidos todavía.</div>'}
+    </div>
+
+    ${S.disputaModal ? (()=>{
+      const p = S.pedidos.find(x=>x.id===S.disputaModal.pedido);
+      return `<div class="card" style="border-color:var(--granate)">
+        <h3 style="color:var(--granate)">Reportar problema · pedido #${p.id}</h3>
+        <p class="sub" style="margin-bottom:14px">${p.lineas.map(l=>l.nombre).join(', ')} · ${fmtCorto(p.fecha)}</p>
+        <div class="campo">
+          <label>¿Qué pasó?</label>
+          ${MOTIVOS_DISPUTA.map(m=>`
+            <div class="check" style="margin-bottom:6px">
+              <input type="radio" name="motivo_disputa" id="md_${m.v}" ${S.disputaModal.motivo===m.v?'checked':''} onchange="setMotivoDisputa('${m.v}')">
+              <label for="md_${m.v}" style="margin:0;font-weight:400">${m.n}</label>
+            </div>`).join('')}
+        </div>
+        <div class="campo">
+          <label>Detalle adicional (opcional)</label>
+          <input placeholder="Ej: llegó sin la ensalada" oninput="setNotaDisputa(this.value)">
+          <div class="hint">Ayuda a soporte y al suplidor a resolver más rápido, pero no es obligatorio.</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn dan" onclick="confirmarDisputa()">Enviar reclamo</button>
+          <button class="btn sec" onclick="cerrarModalDisputa()">Cancelar</button>
+        </div>
+      </div>`;
+    })() : ''}
+  </div>`;
+}
+
+/* ---------- RRHH ---------- */
+function vRRHH(){
+  const disputas=S.pedidos.filter(p=>p.estado==='DISPUTA');
+  const revision=S.cfg.requiereAprobacionMenu
+    ? [...new Set(S.menuDia.filter(m=>m.estado==='EN_REVISION').map(m=>m.sup+'|'+m.fecha))] : [];
+  return `
+  <h2>RRHH y nómina</h2>
+  <p class="sub">El libro mayor es append-only. Una disputa resuelta después del cierre genera nota de crédito
+  en el ciclo siguiente, nunca una corrección del asiento original.</p>
+
+  ${revision.length?`<div class="card" style="margin-bottom:16px">
+    <h3>Menús por aprobar · ${revision.length}</h3>
+    ${revision.map(k=>{const a=k.split('|');
+      return `<div class="kv"><span>${SUPLIDORES.find(x=>x.id===+a[0]).nombre} · ${fmtFecha(a[1])}</span>
+        <button class="btn sm" onclick="aprobarMenu(${a[0]},'${a[1]}')">Aprobar</button></div>`}).join('')}
+  </div>`:''}
+
+  ${disputas.length?`<div class="card" style="margin-bottom:16px;border-color:#E5C2C2">
+    <h3 style="color:var(--granate)">Disputas por resolver · ${disputas.length}</h3>
+    <table>
+      <tr><th>#</th><th>Colaborador</th><th>Motivo</th><th class="num">Monto</th><th>Cargo</th><th></th></tr>
+      ${disputas.map(p=>{
+        const c=S.colaboradores.find(x=>x.id===p.colab);
+        const mv=p.cargoId?S.movimientos.find(m=>m.id===p.cargoId):null;
+        const cerrado=mv&&S.ciclos.find(cc=>cc.id===mv.ciclo).estado!=='ABIERTO';
+        const etq=p.disputaMotivo?MOTIVOS_DISPUTA.find(m=>m.v===p.disputaMotivo):null;
+        return `<tr>
+          <td class="mono">${p.id}</td><td>${c.nombre}</td>
+          <td>${etq?etq.n:'Sin especificar'}${p.disputaNota?`<br><span style="font-size:11.5px;color:var(--muted)">"${p.disputaNota}"</span>`:''}</td>
+          <td class="num">${$(p.montoColab)}</td>
+          <td>${mv?('#'+mv.id+(cerrado?' · <b style="color:var(--granate)">ciclo cerrado</b>':' · ciclo abierto')):'sin cargo'}</td>
+          <td style="text-align:right;white-space:nowrap">
+            <button class="btn sm" onclick="resolverDisputa(${p.id},true)">A favor del colaborador</button>
+            <button class="btn sec sm" onclick="resolverDisputa(${p.id},false)">A favor del suplidor</button>
+          </td></tr>`}).join('')}
+    </table>
+  </div>`:''}
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>Ciclos</h3>
+      ${S.ciclos.map(c=>{
+        const movs=S.movimientos.filter(m=>m.ciclo===c.id);
+        const total=movs.reduce((s,m)=>s+(m.tipo==='CREDITO'?-1:1)*m.monto,0);
+        return `<div style="border:1px solid var(--rule);border-radius:var(--r);padding:12px;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px">
+            <div><b>${fmtCorto(c.ini)} – ${fmtCorto(c.fin)}</b>
+              <div style="font-size:11.5px;color:var(--muted)" class="mono">corte ${fmtSello(c.corte)}</div></div>
+            <span class="est e-${c.estado}">${c.estado}</span>
+          </div>
+          <div class="kv"><span>Movimientos</span><span class="v">${movs.length}</span></div>
+          <div class="kv"><span>Neto del ciclo</span><span class="v">RD$ ${$(total)}</span></div>
+          <div style="margin-top:10px;display:flex;gap:6px">
+            ${c.estado==='ABIERTO'?`<button class="btn sec sm" onclick="cerrarManual(${c.id})">Cerrar ahora</button>`:''}
+            ${c.estado==='CERRADO'?`<button class="btn sm" onclick="enviarArchivo(${c.id})">Enviar a nómina</button>`:''}
+          </div>
+        </div>`}).join('')}
+    </div>
+    <div class="card">
+      <h3>Libro mayor</h3>
+      ${S.movimientos.length?`<table>
+        <tr><th>#</th><th>Sello</th><th>Colaborador</th><th>Concepto</th><th class="num">Monto</th></tr>
+        ${S.movimientos.slice(0,18).map(m=>{
+          const c=S.colaboradores.find(x=>x.id===m.colab), cr=m.tipo==='CREDITO';
+          return `<tr>
+            <td class="mono">${m.id}</td>
+            <td class="mono" style="font-size:11.5px">${fmtSello(m.ts)}</td>
+            <td>${c.nombre}</td>
+            <td>${m.desc}${m.revierte?`<br><span style="font-size:11px;color:var(--granate)">revierte #${m.revierte}</span>`:''}</td>
+            <td class="num ${cr?'neg':''}">${cr?'−':''}${$(m.monto)}</td></tr>`}).join('')}
+      </table>`:'<div class="vacio">Sin movimientos. Los cargos se generan al confirmar la recepción.</div>'}
+    </div>
+  </div>
+
+  ${S.ciclos.filter(c=>c.descuentos&&c.descuentos.length).map(c=>{
+    const csv='CODIGO;CEDULA;NOMBRE;CONCEPTO;MONTO\n'+c.descuentos.map(d=>{
+      const col=S.colaboradores.find(x=>x.id===d.colab);
+      return col.cod+';'+col.cedula+';'+col.nombre+';ALMUERZO;'+d.monto.toFixed(2);
+    }).join('\n');
+    const tot=c.descuentos.reduce((s,d)=>s+d.monto,0);
+    return `<div class="card" style="margin-top:16px">
+      <h3>Archivo de descuento · ${fmtCorto(c.ini)} – ${fmtCorto(c.fin)}</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:20px">
+        <div style="flex:1;min-width:280px">
+          <pre class="csv">${csv}</pre>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:8px">
+            Separador, orden de columnas y formato de monto se configuran por empresa.</div>
+        </div>
+        <div style="min-width:210px">
+          <div class="kv"><span>Colaboradores</span><span class="v">${c.descuentos.length}</span></div>
+          <div class="kv"><span>Total</span><span class="v">RD$ ${$(tot)}</span></div>
+          <div class="kv"><span>Generado</span><span class="v" style="font-size:11.5px">${fmtSello(c.cerrado)}</span></div>
+          <div class="kv"><span>Estado</span><span class="est e-${c.estado}">${c.estado}</span></div>
+        </div>
+      </div>
+    </div>`}).join('')}`;
+}
+
+/* ---------- Plataforma ---------- */
+function vPlat(){
+  const rec=S.pedidos.filter(p=>p.estado==='RECIBIDO');
+  const gmv=rec.reduce((s,p)=>s+p.bruto,0);
+  const subs=rec.reduce((s,p)=>s+p.subsidio,0);
+  const activos=[...new Set(S.pedidos.map(p=>p.colab))].length;
+  const ing=S.cfg.modeloNegocio==='INTERMEDIARIO'?gmv*S.cfg.tasaComision/100:activos*S.cfg.feePorColaborador;
+  const porEstado={};
+  S.pedidos.forEach(p=>{porEstado[p.estado]=(porEstado[p.estado]||0)+1});
+  const cob=SUPLIDORES.map(s=>{
+    const f=proximasFechas(10);
+    return {n:s.nombre, pub:f.filter(x=>menuDe(s.id,x).length).length, tot:f.length};
+  });
+  return `
+  <h2>Panel de plataforma</h2>
+  <p class="sub">Lo que mides como operador del SaaS. La cobertura de menú publicado es tu alerta temprana:
+  un suplidor que deja de publicar deja de vender antes de que nadie se queje.</p>
+  <div class="grid g3">
+    <div class="card"><div class="eyebrow">Volumen</div>
+      <div class="mono" style="font-size:26px;font-weight:500;letter-spacing:-.02em;margin:6px 0 2px">RD$ ${$(gmv)}</div>
+      <div style="font-size:12.5px;color:var(--muted)">GMV confirmado · ${rec.length} pedidos</div></div>
+    <div class="card"><div class="eyebrow">Ingreso propio</div>
+      <div class="mono" style="font-size:26px;font-weight:500;letter-spacing:-.02em;margin:6px 0 2px">RD$ ${$(ing)}</div>
+      <div style="font-size:12.5px;color:var(--muted)">${S.cfg.modeloNegocio==='INTERMEDIARIO'?'Comisión sobre GMV':'Fee × '+activos+' colaboradores activos'}</div></div>
+    <div class="card"><div class="eyebrow">Aporte de las empresas</div>
+      <div class="mono" style="font-size:26px;font-weight:500;letter-spacing:-.02em;margin:6px 0 2px">RD$ ${$(subs)}</div>
+      <div style="font-size:12.5px;color:var(--muted)">${gmv?Math.round(subs/gmv*100):0}% del consumo</div></div>
+  </div>
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card"><h3>Cobertura de menú publicado</h3>
+      ${cob.map(c=>`<div class="kv"><span>${c.n}</span>
+        <span class="v" style="color:${c.pub<c.tot?'var(--ambar)':'var(--verde)'}">${c.pub} / ${c.tot} días</span></div>`).join('')}
+      <div style="font-size:12px;color:var(--muted);margin-top:12px;line-height:1.5">
+        Sobre las próximas 10 fechas hábiles. Publicar por adelantado desde la plantilla mantiene
+        esta métrica en verde sin trabajo diario.</div>
+    </div>
+    <div class="card"><h3>Pedidos por estado</h3>
+      ${Object.keys(porEstado).length?Object.keys(porEstado).map(e=>
+        `<div class="kv"><span class="est e-${e}">${e}</span><span class="v">${porEstado[e]}</span></div>`).join('')
+        :'<div class="vacio">Sin pedidos.</div>'}
+    </div>
+  </div>`;
+}
+
+/* ---------- Trazabilidad ---------- */
+function vLog(){
+  return `
+  <h2>Trazabilidad</h2>
+  <p class="sub">Todo cambio de estado y todo movimiento queda registrado con actor y sello de tiempo.
+  En producción vive en <code class="mono">pedido_evento</code> y <code class="mono">movimiento</code>, ambas append-only.</p>
+  <div class="card"><div class="log">
+    ${S.eventos.length?S.eventos.map(e=>`<div class="ln">
+      <span class="ts">${fmtSello(e.ts)}</span><span class="ac">${e.actor}</span><span class="tx">${e.texto}</span>
+    </div>`).join(''):'<div class="vacio">Sin eventos.</div>'}
+  </div></div>`;
+}
+
+/* ============================================================ */
+arrancar();
+render();
+</script>
+</body>
+</html>

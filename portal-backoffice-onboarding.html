@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Back office — alta de empresas y contratos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#161D26; --ink-2:#232D3B; --ink-3:#3A4757;
+  --paper:#F7F6F2; --card:#FFFFFF; --rule:#DCD8CE; --rule-2:#EAE7E0; --muted:#6B6A63;
+  --verde:#2D6A4F; --verde-bg:#E6EFEA;
+  --ambar:#B06C05; --ambar-bg:#FBF0DC;
+  --granate:#9B2C2C; --granate-bg:#F8E9E9;
+  --azul:#1F4E79; --azul-bg:#E7EEF5;
+  --morado:#5B4B8A; --morado-bg:#ECE8F5;
+  --r:6px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.mono{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--morado);outline-offset:2px}
+
+.top{background:var(--ink);color:#EDEAE3;border-bottom:3px solid var(--morado)}
+.top-in{max-width:1180px;margin:0 auto;padding:16px 20px;display:flex;align-items:center;gap:14px}
+.top-marca{font-weight:600;font-size:14px;color:#9BA6B4}
+.top-marca b{color:#EDEAE3;display:block;font-size:15px}
+
+nav{background:var(--card);border-bottom:1px solid var(--rule);position:sticky;top:0;z-index:40}
+.nav-in{max-width:1180px;margin:0 auto;padding:0 20px;display:flex;gap:2px;overflow-x:auto}
+nav button{background:none;border:none;border-bottom:3px solid transparent;padding:13px 15px;font-size:14px;font-weight:500;color:var(--muted);white-space:nowrap}
+nav button:hover{color:var(--ink)}
+nav button[aria-current="true"]{color:var(--ink);border-bottom-color:var(--morado);font-weight:600}
+
+main{max-width:1180px;margin:0 auto;padding:24px 20px 80px}
+h2{font-size:19px;font-weight:600;letter-spacing:-.015em;margin:0 0 4px}
+h3{font-size:14px;font-weight:600;margin:0 0 12px}
+.sub{color:var(--muted);font-size:13.5px;margin:0 0 20px;max-width:70ch}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:var(--r);padding:18px}
+.card h3{padding-bottom:9px;border-bottom:1px solid var(--rule-2)}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+.campo{margin-bottom:14px}
+.campo:last-child{margin-bottom:0}
+.campo label{display:block;font-size:12.5px;font-weight:500;margin-bottom:5px}
+.campo .hint{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+.campo input,.campo select{width:100%;padding:7px 9px;border:1px solid var(--rule);border-radius:4px;background:var(--paper)}
+.campo input[type=number]{font-family:"IBM Plex Mono",monospace}
+.fila{display:flex;gap:10px}
+.fila>*{flex:1}
+
+.btn{border:1px solid var(--ink);background:var(--ink);color:#fff;padding:8px 14px;border-radius:var(--r);font-size:13.5px;font-weight:500}
+.btn:hover{opacity:.85}
+.btn.sec{background:transparent;color:var(--ink);border-color:var(--rule)}
+.btn.sec:hover{background:var(--paper);opacity:1}
+.btn.ok{background:var(--verde);border-color:var(--verde)}
+.btn.dan{background:transparent;color:var(--granate);border-color:#E0BDBD}
+.btn.sm{padding:5px 10px;font-size:12.5px}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+
+.pasos{display:flex;gap:0;margin-bottom:22px;border-bottom:1px solid var(--rule)}
+.paso{flex:1;text-align:center;padding:0 0 12px;position:relative;color:var(--muted);font-size:12.5px;font-weight:500}
+.paso .num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--rule-2);color:var(--muted);font-family:"IBM Plex Mono",monospace;font-size:11.5px;margin-right:6px}
+.paso.activo{color:var(--ink)}
+.paso.activo .num{background:var(--morado);color:#fff}
+.paso.hecho .num{background:var(--verde);color:#fff}
+.paso.activo::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;background:var(--morado)}
+
+.dropzone{border:2px dashed var(--rule);border-radius:var(--r);padding:32px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+.dropzone:hover,.dropzone.sobre{border-color:var(--morado);background:var(--morado-bg)}
+.dropzone .t{font-weight:500;font-size:14px;margin-bottom:4px}
+.dropzone .s{font-size:12.5px;color:var(--muted)}
+.dropzone input{display:none}
+
+table.prev{width:100%;border-collapse:collapse;font-size:12.5px}
+table.prev th{text-align:left;font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:0 8px 7px 0;border-bottom:1px solid var(--rule)}
+table.prev td{padding:7px 8px 7px 0;border-bottom:1px solid var(--rule-2);vertical-align:top}
+tr.fila-error td{background:var(--granate-bg)}
+tr.fila-alerta td{background:var(--ambar-bg)}
+.fila-motivo{font-size:11px;color:var(--granate);margin-top:2px}
+.fila-motivo.at{color:var(--ambar)}
+
+.est{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:500;letter-spacing:.05em;padding:2px 7px;border-radius:3px;border:1px solid}
+.e-OK{background:var(--verde-bg);color:var(--verde);border-color:#BCD8C9}
+.e-ERROR{background:var(--granate-bg);color:var(--granate);border-color:#E5C2C2}
+.e-ALERTA{background:var(--ambar-bg);color:var(--ambar);border-color:#EBD3A5}
+.e-ACTIVA{background:var(--verde-bg);color:var(--verde);border-color:#BCD8C9}
+.e-BORRADOR{background:var(--rule-2);color:var(--muted);border-color:var(--rule)}
+.e-INACTIVA{background:var(--rule-2);color:var(--muted);border-color:var(--rule)}
+
+.resumen{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px}
+.resumen .pill{background:var(--paper);border:1px solid var(--rule);border-radius:var(--r);padding:10px 16px;flex:1;min-width:130px}
+.resumen .pill .n{font-family:"IBM Plex Mono",monospace;font-size:22px;font-weight:500;line-height:1}
+.resumen .pill .l{font-size:11.5px;color:var(--muted);margin-top:3px}
+.resumen .pill.ok .n{color:var(--verde)}
+.resumen .pill.err .n{color:var(--granate)}
+.resumen .pill.warn .n{color:var(--ambar)}
+
+.emp-card{border:1px solid var(--rule);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer;transition:border-color .15s}
+.emp-card:hover{border-color:var(--ink-3)}
+.emp-card .n{font-weight:500;font-size:14px}
+.emp-card .s{font-size:12px;color:var(--muted);margin-top:2px}
+
+.contrato-row{border:1px solid var(--rule);border-radius:var(--r);padding:12px 14px;margin-bottom:10px}
+.contrato-row .top-r{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.contrato-row .top-r .n{font-weight:500;font-size:13.5px}
+.slider{display:flex;align-items:center;gap:10px}
+.slider input[type=range]{flex:1}
+.slider .v{font-family:"IBM Plex Mono",monospace;font-size:13px;width:64px;text-align:right}
+
+.vacio{color:var(--muted);font-size:13px;padding:22px 0;text-align:center}
+.kv{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--rule-2)}
+.kv:last-child{border-bottom:none}
+.kv .v{font-family:"IBM Plex Mono",monospace;font-weight:500}
+.aviso{font-size:12.5px;padding:9px 11px;border-radius:4px;margin:10px 0;line-height:1.45;border-left:3px solid}
+.aviso.at{background:var(--ambar-bg);border-color:var(--ambar);color:#6E4403}
+.aviso.no{background:var(--granate-bg);border-color:var(--granate);color:#6E1F1F}
+.aviso.si{background:var(--verde-bg);border-color:var(--verde);color:#1E4A36}
+</style>
+</head>
+<body>
+
+<div class="top"><div class="top-in">
+  <div class="top-marca">Back office<b>Alta de empresas, colaboradores y contratos</b></div>
+</div></div>
+
+<nav><div class="nav-in" id="nav"></div></nav>
+<main id="app"></main>
+
+<script>
+/* ============================================================
+   DATOS
+   ============================================================ */
+const SUPLIDORES = [
+  {id:1, nombre:'Cocina Criolla del Este', rnc:'131-45872-1'},
+  {id:2, nombre:'Verde Menú', rnc:'130-99114-6'},
+  {id:3, nombre:'Sabor Express', rnc:'132-20456-9'}
+];
+
+function estadoInicial(){
+  return {
+    vista:'empresas',
+    empresas:[
+      {id:1, rnc:'101-88452-3', nombre:'Futuro ARS', frecuenciaNomina:'QUINCENAL', colaboradores:42, estado:'ACTIVA',
+       contratos:[{sup:1, ajuste:0, estado:'ACTIVA'}]},
+      {id:2, rnc:'130-55211-7', nombre:'Grupo Vantia', frecuenciaNomina:'MENSUAL', colaboradores:18, estado:'ACTIVA',
+       contratos:[{sup:1, ajuste:-7.5, estado:'ACTIVA'}, {sup:2, ajuste:0, estado:'ACTIVA'}]}
+    ],
+    empresaSel:1,
+    onb:{ paso:1, nombre:'', rnc:'', frecuencia:'QUINCENAL', archivo:null, filas:[] },
+    seq:{emp:3}
+  };
+}
+let S = estadoInicial();
+
+/* ============================================================
+   UTILIDADES
+   ============================================================ */
+function $(n){return n.toLocaleString('es-DO',{minimumFractionDigits:0,maximumFractionDigits:2})}
+function validarRNC(v){ return /^\d{3}-?\d{5,8}-?\d?$/.test((v||'').trim()); }
+function validarCedula(v){ return /^\d{3}-?\d{7}-?\d$/.test((v||'').trim()); }
+
+/* Simulación de un CSV típico: algunas filas limpias, otras con problemas reales */
+const CSV_DEMO = `codigo_nomina,cedula,nombre_completo,email,punto_entrega,salario_neto
+N-2001,001-1842306-4,Rosa Guzmán,rosa.guzman@futuroars.com,Torre corporativa,38000
+N-2002,402-2019887-1,Miguel Tavárez,miguel.tavarez@futuroars.com,Torre corporativa,26500
+N-2003,001-0997451,Elena Duarte,elena.duarte@futuroars.com,Torre corporativa,41200
+N-2004,031-0455129-3,,jose.jose@futuroars.com,Torre corporativa,22000
+N-2001,224-1187734-5,Pablo Reyes,pablo.reyes@futuroars.com,Los Alcarrizos,29500
+N-2006,402-2019887-1,Miguel Tavárez,miguel.duplicado@futuroars.com,Los Alcarrizos,26500
+N-2007,001-3341290-8,Yolanda Cruz,yolanda.cruz@futuroars.com,Bávaro (sin sede),33000`;
+
+function procesarCSV(texto){
+  const lineas = texto.trim().split('\n');
+  const encabezado = lineas[0].split(',').map(h=>h.trim());
+  const filas = lineas.slice(1).map((l,i)=>{
+    const cols = l.split(',');
+    const obj = {}; encabezado.forEach((h,j)=>obj[h]=(cols[j]||'').trim());
+    return {n:i+2, datos:obj, errores:[], alertas:[]};
+  });
+
+  const vistos = {cod:{}, ced:{}};
+  filas.forEach(f=>{
+    const d=f.datos;
+    if(!d.codigo_nomina) f.errores.push('Falta código de nómina.');
+    if(!d.nombre_completo) f.errores.push('Falta el nombre completo.');
+    if(!validarCedula(d.cedula)) f.errores.push('Cédula con formato inválido: "'+d.cedula+'".');
+    if(!d.punto_entrega) f.errores.push('Falta punto de entrega.');
+    else if(!PUNTOS_VALIDOS.includes(d.punto_entrega)) f.alertas.push('Punto de entrega "'+d.punto_entrega+'" no coincide con ningún punto configurado.');
+    if(d.salario_neto && (isNaN(+d.salario_neto) || +d.salario_neto<=0)) f.errores.push('Salario neto inválido.');
+
+    if(d.codigo_nomina){
+      if(vistos.cod[d.codigo_nomina]) f.errores.push('Código de nómina duplicado en el archivo (fila '+vistos.cod[d.codigo_nomina]+').');
+      else vistos.cod[d.codigo_nomina]=f.n;
+    }
+    if(d.cedula && validarCedula(d.cedula)){
+      if(vistos.ced[d.cedula]) f.errores.push('Cédula duplicada en el archivo (fila '+vistos.ced[d.cedula]+').');
+      else vistos.ced[d.cedula]=f.n;
+    }
+  });
+  return filas;
+}
+const PUNTOS_VALIDOS = ['Torre corporativa','Los Alcarrizos'];
+
+/* ============================================================
+   ACCIONES — onboarding
+   ============================================================ */
+function irPasoOnb(p){ S.onb.paso=p; render(); }
+function setOnb(campo, v){ S.onb[campo]=v; render(); }
+function cargarDemo(){
+  S.onb.archivo = 'colaboradores_futuro_ars.csv';
+  S.onb.filas = procesarCSV(CSV_DEMO);
+  S.onb.paso = 3;
+  render();
+}
+function quitarArchivo(){ S.onb.archivo=null; S.onb.filas=[]; render(); }
+function confirmarImportacion(){
+  const validas = S.onb.filas.filter(f=>!f.errores.length);
+  const emp = {
+    id: S.seq.emp++,
+    rnc: S.onb.rnc, nombre: S.onb.nombre, frecuenciaNomina: S.onb.frecuencia,
+    colaboradores: validas.length, estado:'ACTIVA', contratos:[]
+  };
+  S.empresas.push(emp);
+  S.empresaSel = emp.id;
+  S.onb = { paso:1, nombre:'', rnc:'', frecuencia:'QUINCENAL', archivo:null, filas:[] };
+  S.vista = 'empresas';
+  render();
+}
+
+/* ============================================================
+   ACCIONES — contratos
+   ============================================================ */
+function agregarContrato(supId){
+  const emp = S.empresas.find(e=>e.id===S.empresaSel);
+  if(emp.contratos.find(c=>c.sup===supId)) return;
+  emp.contratos.push({sup:supId, ajuste:0, estado:'ACTIVA'});
+  render();
+}
+function editarAjuste(supId, v){
+  const emp = S.empresas.find(e=>e.id===S.empresaSel);
+  emp.contratos.find(c=>c.sup===supId).ajuste = +v;
+  render();
+}
+function toggleContrato(supId){
+  const emp = S.empresas.find(e=>e.id===S.empresaSel);
+  const c = emp.contratos.find(c=>c.sup===supId);
+  c.estado = c.estado==='ACTIVA' ? 'INACTIVA' : 'ACTIVA';
+  render();
+}
+function seleccionarEmpresa(id){ S.empresaSel=id; S.vista='detalle'; render(); }
+
+function ir(v){ S.vista=v; render(); }
+function reiniciar(){ S=estadoInicial(); render(); }
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+const VISTAS=[ {k:'empresas',n:'Empresas'}, {k:'onboarding',n:'Alta de empresa'}, {k:'detalle',n:'Contratos y detalle'} ];
+
+function render(){
+  document.getElementById('nav').innerHTML = VISTAS.map(v=>
+    '<button aria-current="'+(S.vista===v.k)+'" onclick="ir(\''+v.k+'\')">'+v.n+'</button>').join('')
+    + '<button style="margin-left:auto;color:var(--muted)" onclick="reiniciar()">Reiniciar</button>';
+
+  document.getElementById('app').innerHTML = ({
+    empresas:vEmpresas, onboarding:vOnboarding, detalle:vDetalle
+  })[S.vista]();
+}
+
+/* ---------- Vista: lista de empresas ---------- */
+function vEmpresas(){
+  return `
+  <h2>Empresas</h2>
+  <p class="sub">Cada empresa se da de alta desde aquí, no vía self-service — se verifica el RNC y se
+  configuran sus contratos con suplidores antes de que RRHH tenga acceso a su propio portal.</p>
+
+  <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+    <button class="btn" onclick="ir('onboarding')">Dar de alta empresa nueva</button>
+  </div>
+
+  ${S.empresas.map(e=>`
+    <div class="emp-card" onclick="seleccionarEmpresa(${e.id})">
+      <div>
+        <div class="n">${e.nombre}</div>
+        <div class="s mono">RNC ${e.rnc} · ${e.colaboradores} colaboradores · nómina ${e.frecuenciaNomina.toLowerCase()}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:12px;color:var(--muted)">${e.contratos.length} suplidor(es)</span>
+        <span class="est e-${e.estado}">${e.estado}</span>
+      </div>
+    </div>`).join('')}`;
+}
+
+/* ---------- Vista: onboarding con CSV ---------- */
+function vOnboarding(){
+  const pasos = [
+    {n:1, t:'Datos de la empresa'},
+    {n:2, t:'Cargar colaboradores'},
+    {n:3, t:'Revisar e importar'}
+  ];
+  const paso = S.onb.paso;
+  const datosOk = S.onb.nombre.trim() && validarRNC(S.onb.rnc);
+
+  return `
+  <h2>Alta de empresa nueva</h2>
+  <p class="sub">Tres pasos: datos de la empresa, carga del CSV de colaboradores, y revisión fila por fila
+  antes de confirmar. Nada se importa hasta el paso 3.</p>
+
+  <div class="pasos">
+    ${pasos.map(p=>`<div class="paso ${paso===p.n?'activo':''} ${paso>p.n?'hecho':''}">
+      <span class="num">${paso>p.n?'✓':p.n}</span>${p.t}</div>`).join('')}
+  </div>
+
+  ${paso===1?`
+  <div class="card" style="max-width:480px">
+    <h3>Datos de la empresa</h3>
+    <div class="campo">
+      <label>Razón social</label>
+      <input value="${S.onb.nombre}" placeholder="Ej. Futuro ARS" oninput="setOnb('nombre',this.value)">
+    </div>
+    <div class="campo">
+      <label>RNC</label>
+      <input value="${S.onb.rnc}" placeholder="000-00000-0" oninput="setOnb('rnc',this.value)">
+      ${S.onb.rnc && !validarRNC(S.onb.rnc)?'<div class="hint" style="color:var(--granate)">Formato de RNC no reconocido.</div>':''}
+    </div>
+    <div class="campo">
+      <label>Frecuencia de nómina</label>
+      <select onchange="setOnb('frecuencia',this.value)">
+        <option value="QUINCENAL" ${S.onb.frecuencia==='QUINCENAL'?'selected':''}>Quincenal</option>
+        <option value="MENSUAL" ${S.onb.frecuencia==='MENSUAL'?'selected':''}>Mensual</option>
+      </select>
+    </div>
+    <button class="btn" style="margin-top:6px" ${datosOk?'':'disabled'} onclick="irPasoOnb(2)">Continuar</button>
+  </div>`:''}
+
+  ${paso===2?`
+  <div class="card" style="max-width:560px">
+    <h3>Cargar colaboradores</h3>
+    <p class="sub" style="margin-bottom:12px">Formato CSV con columnas: código de nómina, cédula, nombre completo,
+    correo, punto de entrega y salario neto (para el límite de endeudamiento).</p>
+    ${!S.onb.archivo?`
+    <div class="dropzone" onclick="cargarDemo()">
+      <div class="t">Haz clic para simular la carga de colaboradores_futuro_ars.csv</div>
+      <div class="s">En producción: arrastra el archivo o selecciónalo desde tu equipo</div>
+    </div>`:`
+    <div class="aviso si">Archivo cargado: <b>${S.onb.archivo}</b> · ${S.onb.filas.length} filas leídas
+      <button class="btn sec sm" style="margin-left:10px" onclick="quitarArchivo()">Quitar</button></div>
+    <button class="btn" onclick="irPasoOnb(3)">Ver revisión de filas</button>`}
+    <div style="margin-top:14px"><button class="btn sec sm" onclick="irPasoOnb(1)">Volver</button></div>
+  </div>`:''}
+
+  ${paso===3?vRevisionCSV():''}`;
+}
+
+function vRevisionCSV(){
+  const filas = S.onb.filas;
+  const conError = filas.filter(f=>f.errores.length);
+  const conAlerta = filas.filter(f=>!f.errores.length && f.alertas.length);
+  const limpias = filas.filter(f=>!f.errores.length && !f.alertas.length);
+  const importables = filas.filter(f=>!f.errores.length);
+
+  return `
+  <div class="resumen">
+    <div class="pill"><div class="n">${filas.length}</div><div class="l">filas leídas</div></div>
+    <div class="pill ok"><div class="n">${limpias.length}</div><div class="l">listas sin observaciones</div></div>
+    <div class="pill warn"><div class="n">${conAlerta.length}</div><div class="l">con alerta, se pueden importar</div></div>
+    <div class="pill err"><div class="n">${conError.length}</div><div class="l">con error, se excluyen</div></div>
+  </div>
+
+  <div class="card">
+    <h3>Detalle de la carga</h3>
+    <table class="prev">
+      <tr><th>Fila</th><th>Código</th><th>Nombre</th><th>Cédula</th><th>Punto de entrega</th><th>Estado</th></tr>
+      ${filas.map(f=>{
+        const est = f.errores.length?'ERROR':(f.alertas.length?'ALERTA':'OK');
+        return `<tr class="${f.errores.length?'fila-error':(f.alertas.length?'fila-alerta':'')}">
+          <td class="mono">${f.n}</td>
+          <td class="mono">${f.datos.codigo_nomina||'—'}</td>
+          <td>${f.datos.nombre_completo||'<span style="color:var(--granate)">sin nombre</span>'}</td>
+          <td class="mono">${f.datos.cedula||'—'}</td>
+          <td>${f.datos.punto_entrega||'—'}</td>
+          <td><span class="est e-${est}">${est}</span>
+            ${f.errores.map(e=>`<div class="fila-motivo">${e}</div>`).join('')}
+            ${f.alertas.map(a=>`<div class="fila-motivo at">${a}</div>`).join('')}
+          </td>
+        </tr>`;
+      }).join('')}
+    </table>
+
+    ${conError.length?`<div class="aviso no">${conError.length} fila(s) no se importarán por errores de datos
+      (cédula inválida, duplicados, campos obligatorios faltantes). Corrige el archivo original y vuelve a cargarlo
+      si quieres incluirlas — no bloquean el resto de la importación.</div>`:''}
+    ${conAlerta.length?`<div class="aviso at">${conAlerta.length} fila(s) tienen un punto de entrega que no coincide
+      con los configurados. Se importarán, pero quedarán sin punto asignado hasta que alguien lo corrija.</div>`:''}
+
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn ok" ${importables.length?'':'disabled'} onclick="confirmarImportacion()">
+        Importar ${importables.length} colaborador(es)</button>
+      <button class="btn sec" onclick="irPasoOnb(2)">Volver a cargar archivo</button>
+    </div>
+  </div>`;
+}
+
+/* ---------- Vista: detalle de empresa y contratos ---------- */
+function vDetalle(){
+  const emp = S.empresas.find(e=>e.id===S.empresaSel);
+  if(!emp) return '<div class="vacio">Selecciona una empresa desde la lista.</div>';
+  const disponibles = SUPLIDORES.filter(s=>!emp.contratos.find(c=>c.sup===s.id));
+
+  return `
+  <h2>${emp.nombre}</h2>
+  <p class="sub mono">RNC ${emp.rnc} · nómina ${emp.frecuenciaNomina.toLowerCase()} · ${emp.colaboradores} colaboradores activos</p>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>Suplidores contratados</h3>
+      ${emp.contratos.length?emp.contratos.map(c=>{
+        const sup = SUPLIDORES.find(s=>s.id===c.sup);
+        return `<div class="contrato-row">
+          <div class="top-r">
+            <div>
+              <div class="n">${sup.nombre}</div>
+              <div style="font-size:11.5px;color:var(--muted)" class="mono">RNC ${sup.rnc}</div>
+            </div>
+            <span class="est e-${c.estado==='ACTIVA'?'ACTIVA':'INACTIVA'}">${c.estado}</span>
+          </div>
+          <div class="slider">
+            <span style="font-size:12px;color:var(--muted);white-space:nowrap">Ajuste de precio</span>
+            <input type="range" min="-25" max="25" step="0.5" value="${c.ajuste}" oninput="editarAjuste(${c.sup},this.value)">
+            <span class="v">${c.ajuste>0?'+':''}${c.ajuste}%</span>
+          </div>
+          <div class="hint" style="margin-top:6px">
+            ${c.ajuste===0?'El colaborador ve el precio del menú tal como lo publica el suplidor.':
+              c.ajuste<0?`El colaborador ve el precio del menú con ${Math.abs(c.ajuste)}% de descuento por volumen negociado.`:
+              `El colaborador ve el precio del menú incrementado ${c.ajuste}% (recargo por logística u otro acuerdo).`}
+          </div>
+          <div style="margin-top:8px">
+            <button class="btn sec sm" onclick="toggleContrato(${c.sup})">${c.estado==='ACTIVA'?'Desactivar contrato':'Reactivar contrato'}</button>
+          </div>
+        </div>`;
+      }).join(''):'<div class="vacio">Sin suplidores contratados todavía.</div>'}
+
+      ${disponibles.length?`
+      <div class="campo" style="margin-top:14px">
+        <label>Agregar suplidor</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${disponibles.map(s=>`<button class="btn sec sm" onclick="agregarContrato(${s.id})">${s.nombre}</button>`).join('')}
+        </div>
+      </div>`:''}
+    </div>
+
+    <div class="card">
+      <h3>Resumen</h3>
+      <div class="kv"><span>Colaboradores activos</span><span class="v">${emp.colaboradores}</span></div>
+      <div class="kv"><span>Suplidores activos</span><span class="v">${emp.contratos.filter(c=>c.estado==='ACTIVA').length}</span></div>
+      <div class="kv"><span>Frecuencia de nómina</span><span class="v">${emp.frecuenciaNomina}</span></div>
+      <div class="kv"><span>Estado</span><span class="est e-${emp.estado}">${emp.estado}</span></div>
+      <div class="aviso si" style="margin-top:14px">
+        Sin al menos un contrato activo, los colaboradores de esta empresa no verán ningún suplidor
+        disponible al intentar pedir su almuerzo.
+      </div>
+    </div>
+  </div>`;
+}
+
+render();
+</script>
+</body>
+</html>

@@ -8,6 +8,8 @@ require('pg').types.setTypeParser(20, (v) => parseInt(v, 10)); // ver src/common
  * Seguro de correr varias veces: usa ON CONFLICT para no duplicar.
  */
 require('dotenv').config();
+const fs = require('fs');
+const path = require('path');
 const bcrypt = require('bcryptjs');
 const { Client } = require('pg');
 
@@ -69,6 +71,27 @@ function abortar(motivo, detalle) {
  * Hay que declararlo una vez, explícitamente. Eso cuesta una línea en el
  * `.env`, y el mensaje de error de abajo la da ya escrita para copiar.
  */
+/**
+ * Lee el host de `MIGRATE_DATABASE_URL` tal como está escrito en el ARCHIVO
+ * `.env`, sin pasar por `process.env`.
+ *
+ * Hace falta porque `dotenv` no sobrescribe variables que ya existan en el
+ * entorno. Si alguien hizo `$env:MIGRATE_DATABASE_URL = "...produccion..."`
+ * en su ventana de PowerShell, el archivo dice una cosa y el proceso usa
+ * otra — y esa diferencia es exactamente la señal de peligro.
+ */
+function hostSegunArchivoEnv() {
+  try {
+    const texto = fs.readFileSync(path.join(__dirname, '..', '.env'), 'utf8');
+    const linea = texto.split('\n').find((l) => /^\s*MIGRATE_DATABASE_URL\s*=/.test(l));
+    if (!linea) return null;
+    const valor = linea.slice(linea.indexOf('=') + 1).trim().replace(/^["']|["']$/g, '');
+    return new URL(valor).hostname;
+  } catch {
+    return null;
+  }
+}
+
 function abortarSiNoEsBaseDeDesarrollo() {
   if (process.argv.includes('--forzar')) return;
 
@@ -85,14 +108,45 @@ function abortarSiNoEsBaseDeDesarrollo() {
     return;
   }
 
+  // Esta comprobación va PRIMERO, antes que cualquier permiso, porque detecta
+  // una trampa real que la propia guía de despliegue tendía:
+  //
+  // El paso 6 hace `$env:MIGRATE_DATABASE_URL = "...produccion..."` para crear
+  // el primer administrador. En PowerShell eso vive el resto de la sesión, y
+  // `dotenv` no lo sobrescribe. Si en esa misma ventana corres `npm run seed`
+  // por costumbre, apunta a PRODUCCIÓN — el escenario exacto que esta guarda
+  // existe para impedir.
+  //
+  // Peor: la versión anterior abortaba sugiriendo
+  // `SEED_HOST_PERMITIDO=<host>` con el host de producción interpolado, bajo
+  // el texto "si ese ES tu host de desarrollo, declaralo". Pegar esa línea
+  // desactivaba la protección contra producción para siempre. La guarda
+  // guiaba al usuario hacia el desastre que debía evitar.
+  const hostDelArchivo = hostSegunArchivoEnv();
+  if (hostDelArchivo && hostDelArchivo !== host) {
+    abortar(
+      'tu ventana está apuntando a una base distinta a la de tu .env.',
+      `  .env dice:        ${hostDelArchivo}\n` +
+        `  esta ventana usa: ${host}\n\n` +
+        'Alguien fijó MIGRATE_DATABASE_URL como variable de entorno (el paso 6\n' +
+        'de GUIA-DESPLIEGUE.md lo hace, para crear el administrador de\n' +
+        'producción) y dotenv no la sobrescribe.\n\n' +
+        'Si ese segundo host es tu base de PRODUCCIÓN, NO sigas: cierra esta\n' +
+        'ventana, o limpia la variable, y vuelve a intentarlo.\n' +
+        '  Remove-Item Env:MIGRATE_DATABASE_URL',
+    );
+  }
+
   if (host === 'localhost' || host === '127.0.0.1') return;
   if (host && host === (process.env.SEED_HOST_PERMITIDO || '').trim()) return;
 
   abortar(
     `la base destino no es local (${host}).`,
-    'Si ese ES tu host de desarrollo, agrega esta línea a tu .env:\n\n' +
+    'Si ese host es el de TU RAMA DE DESARROLLO, agrega esta línea a tu .env:\n\n' +
       `  SEED_HOST_PERMITIDO=${host}\n\n` +
-      'y este aviso no vuelve a salir.',
+      'y este aviso no vuelve a salir.\n\n' +
+      'Si es el de producción, no la agregues: estarías desactivando esta\n' +
+      'protección justo donde más hace falta.',
   );
 }
 

@@ -188,10 +188,19 @@ Si dice `"estado":"degradado"`, el JSON trae una etiqueta por cada base:
 | `base-no-existe` | El nombre de la base al final de la URL |
 | `inalcanzable` | El host — ¿es la rama correcta de Neon? |
 | `timeout` | Neon despertando; reintenta en un minuto |
+| `error-desconocido` | Cualquier otra cosa: cuota de cómputo de Neon agotada, límite de conexiones, el rol todavía sin crear. Aquí hay que abrir los logs de Render y buscar la línea `Fallo al consultar la base ...`, que trae el mensaje completo |
 
 El motivo completo queda en los logs de Render, no en la respuesta pública —
 ese mensaje incluye el host de tu base, y mientras las contraseñas de los roles
 sigan publicadas en las migraciones, ese host es lo único que la protege.
+
+> **Si las bases están mal, no vas a poder abrir `/health` en el navegador.**
+> `render.yaml` declara `/health` como health check, y ese endpoint devuelve
+> 503 cuando alguna base falla — así que Render nunca pone el servicio en
+> línea y lo reinicia en bucle. Verías la página de error de Render, no el
+> JSON. **En ese caso el diagnóstico está en los logs**, no en la URL: busca
+> la línea `Fallo al consultar la base "app"` o `"plataforma"`, que trae el
+> mensaje completo. La tabla de arriba sirve cuando el servicio sí está vivo.
 
 ## Paso 5b — Conectar los dos servicios entre sí
 
@@ -234,6 +243,18 @@ puedes entrar. **No corras `npm run seed`** — eso siembra los datos de demo,
 incluido un administrador con la contraseña `admin123456`, que está publicada
 en este mismo repositorio.
 
+De hecho ya no puedes: `scripts/seed.js` aborta solo si la base destino no es
+`localhost`. Para que siga funcionando en **tu máquina de desarrollo**, declara
+una vez en tu `.env` local el host de tu rama `dev` de Neon:
+
+```
+SEED_HOST_PERMITIDO=ep-tu-rama-dev.neon.tech
+```
+
+Si no sabes cuál es, corre `npm run seed` y el propio error te da la línea ya
+escrita. **Nunca pongas ahí el host de producción** — sería desactivar la
+protección justo donde más hace falta.
+
 Desde tu máquina, con `MIGRATE_DATABASE_URL` apuntando **a producción**:
 
 ```powershell
@@ -246,7 +267,31 @@ Debe responder:
 ```
 Usuario creado: tu@correo.com
 Membresía SUPERADMIN de plataforma creada.
+
+Ya puedes entrar al frontend con ese email y contraseña.
+Desde ahí, invita al resto de los usuarios — no vuelvas a usar este script.
 ```
+
+Dos detalles de la contraseña: **mínimo 12 caracteres** (el script la rechaza
+si no), y si contiene `$`, usa **comillas simples** — entre comillas dobles
+PowerShell lo interpreta como variable y llegaría una contraseña distinta a la
+que escribiste, sin ningún aviso.
+
+> ### ⚠️ Cierra esa ventana al terminar
+>
+> El `$env:MIGRATE_DATABASE_URL` que acabas de fijar **vive mientras la
+> ventana de PowerShell esté abierta**, y tiene prioridad sobre tu archivo
+> `.env`. Cualquier comando npm que corras después en esa misma ventana
+> apuntará a **producción**, no a tu base de desarrollo.
+>
+> Al terminar, cierra la ventana o limpia la variable:
+>
+> ```powershell
+> Remove-Item Env:MIGRATE_DATABASE_URL
+> ```
+>
+> `npm run seed` detecta esta situación y aborta avisándote, pero no cuentes
+> con eso: otros comandos no lo hacen.
 
 Ese script crea un usuario y su membresía de plataforma, y nada más. De ahí en
 adelante todo se hace desde la aplicación: ese administrador invita a RRHH y a
@@ -263,6 +308,11 @@ contraseña del paso 6.
 
 Deberías caer en el panel de plataforma. Desde ahí: dar de alta una empresa,
 cargar su CSV de colaboradores, e invitar a alguien.
+
+**Si no configuraste Resend no va a salir ningún correo, y eso es lo
+esperado** — no es que la invitación fallara. La pantalla te muestra el enlace
+recién creado justo debajo del formulario: cópialo de ahí y pásalo por el
+medio que quieras. Vence en 7 días.
 
 ---
 
@@ -305,9 +355,10 @@ git push
 `--include=dev`. Con `NODE_ENV=production`, npm omite las devDependencies, y
 `typescript` vive ahí. Revisa `render.yaml`.
 
-**La API no arranca y el log dice que falta `FRONTEND_URL`** — no hiciste el
-paso 5b, o lo hiciste sin redesplegar. Es el comportamiento esperado, no un
-error.
+**La API no arranca y el log dice `faltan variables de entorno obligatorias:
+FRONTEND_URL, CORS_ORIGENES`** — no hiciste el paso 5b, o lo hiciste sin
+redesplegar. Es el comportamiento esperado, no un error: son justo las dos que
+dejaste vacías en el paso 4, y salen siempre juntas.
 
 **El frontend carga pero todo da error de red** — dos causas posibles, en
 orden de frecuencia. (1) `VITE_API_URL` está bien puesta pero **no
@@ -322,31 +373,49 @@ activo. Sin él, `/invitacion/:token` y `/restablecer-password/:token` no
 existen como archivos y el host devuelve 404. Está declarado en `render.yaml`
 bajo `routes`; si lo tocaste, restáuralo.
 
-**`/health` dice `degradado`** — ver la tabla de etiquetas del paso 5.
+**El deploy queda en rojo con "health check failed", o `/health` no responde**
+— la API declara `/health` como health check y ese endpoint devuelve 503 si
+alguna de las dos bases falla, así que Render no pone el servicio en línea y no
+vas a poder leer el JSON. El diagnóstico está en los logs: busca
+`Fallo al consultar la base`. Si el servicio **sí** está vivo y `/health`
+responde `degradado`, usa la tabla de etiquetas del paso 5.
 
-**Un correo de invitación llega con un enlace a `localhost`** — `FRONTEND_URL`
-quedó mal o se puso después de que la API arrancara. Corrígela y redespliega
-la API; las invitaciones ya mandadas hay que volver a enviarlas.
+**Un correo de invitación llega con un enlace equivocado** — `FRONTEND_URL`
+tiene un valor incorrecto. Vacía no puede estar: en producción la API se niega
+a arrancar sin ella. Corrígela, redespliega la API, y vuelve a mandar las
+invitaciones que ya salieron — esos enlaces viejos ya están escritos en los
+correos y no cambian solos.
 
 **El servicio se reinicia solo, sin requests** — revisa que
 `src/db/db.module.ts` siga registrando `pool.on('error')`. Sin ese listener,
 una conexión ociosa que Neon corta al suspenderse tumba el proceso entero.
 
-**Los logins fallan con 429 a cada rato** — falta `CONFIAR_EN_PROXY=true` en
-el servicio. Sin eso, todos los requests parecen venir de la misma IP (la del
-balanceador de Render) y el límite de 5 intentos por minuto se comparte entre
-todos los usuarios de la plataforma.
+**Los logins fallan con 429 a cada rato** — `CONFIAR_EN_PROXY` debe valer
+`true`. El blueprint la pone sola, así que no tienes que agregarla: revisa en
+Environment que siga ahí y que nadie la haya borrado o cambiado. Sin ella todos
+los requests parecen venir de la misma IP (la del balanceador de Render) y el
+límite de 5 intentos por minuto se comparte entre todos los usuarios de la
+plataforma.
 
 ---
 
 ## Volver atrás
 
-No hay `migrate down` — a propósito, revertir DDL automáticamente es más
+El comando `npm run migrate:down` existe, pero **no revierte nada**: sale con
+un error y te manda aquí. Es a propósito — revertir DDL automáticamente es más
 peligroso que útil.
 
 - **Para el código:** en Render, cada deploy tiene un botón de rollback.
 - **Para la base:** usa el point-in-time restore de Neon (crea un branch desde
   un momento anterior y apunta ahí las variables).
 
-Ojo con el orden: restaurar la base **no** revierte el código desplegado. Si
-vuelves la base a un estado sin la última migración, vuelve también el código.
+**Ojo con el orden, en las dos direcciones — ninguna arrastra a la otra:**
+
+- Restaurar la base **no** revierte el código desplegado.
+- Hacer rollback del código en Render **no** deshace las migraciones ya
+  aplicadas. El arranque dirá `Nada que aplicar` y el deploy quedará verde,
+  con código viejo corriendo sobre un esquema nuevo, sin ninguna señal de que
+  algo está desalineado.
+
+Si la migración que quieres deshacer es incompatible con el código viejo,
+tienes que revertir las dos cosas.

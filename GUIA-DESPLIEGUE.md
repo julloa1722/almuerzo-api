@@ -113,7 +113,7 @@ PLATFORM_DATABASE_URL=postgres://almuerzo_platform:almuerzo_platform_dev@ep-algo
 
 ## Paso 4 — Cargar las credenciales
 
-Render te va a pedir las variables marcadas como secretas. Son estas cuatro,
+Render te va a pedir las variables marcadas como secretas. Son estas cinco,
 todas en el servicio `almuerzo-api`:
 
 | Variable | Qué pegar |
@@ -155,9 +155,7 @@ arrancar bien y mandar correos de invitación apuntando a `localhost`, que es
 un fallo que solo descubres cuando alguien no puede entrar. El paso 5b lo
 arregla.
 
-El frontend, en cambio, sí debe construirse y publicarse sin problema.
-
-En los logs de `almuerzo-api` deberías ver, en este orden:
+En los logs de `almuerzo-api` deberías ver **exactamente esto**, en este orden:
 
 ```
 Tomando el lock de migraciones ...
@@ -165,16 +163,30 @@ Aplicando 0001_extensiones.sql ...
   OK: 0001_extensiones.sql
 ... (18 migraciones)
 18 migración(es) aplicada(s).
-almuerzo-api escuchando en el puerto 10000
-CORS permitido para: https://almuerzo-front.onrender.com
+No se puede arrancar: faltan variables de entorno obligatorias: FRONTEND_URL, CORS_ORIGENES.
 ```
 
-Las migraciones corren solas en cada arranque — no tienes que hacer nada desde
-tu máquina. Si una falla, el servicio no arranca: es a propósito, mejor caído
-que sirviendo contra un esquema equivocado.
+**Esa última línea es el éxito de este paso, no un fracaso.** Significa que las
+migraciones corrieron bien contra tu base de producción y que la API se detuvo
+donde debía. Render marcará el deploy en rojo; ignóralo por ahora.
 
-**Verifica la API** abriendo `https://almuerzo-api.onrender.com/health`.
-Debe responder:
+Lo que **no** vas a ver todavía son las líneas `almuerzo-api escuchando...` ni
+`CORS permitido para...`: la validación de entorno corre antes de levantar el
+servidor. Tampoco tiene sentido abrir `/health` aún — el servicio no está en
+línea, así que verías la página de error de Render.
+
+**Lo único que hay que verificar aquí son las 18 migraciones.** Si alguna
+falla, el resto no se aplica — y entonces el problema está en la base o en las
+cadenas de conexión, no en las variables que dejaste vacías.
+
+Las migraciones corren solas en cada arranque, no tienes que hacer nada desde
+tu máquina.
+
+El frontend, en cambio, ya debería estar publicado y accesible en su URL
+(aunque todavía no pueda hablar con la API — eso lo arregla el paso 5b).
+
+Terminado el paso 5b vas a volver aquí a comprobar la API. Cuando esté arriba,
+`https://almuerzo-api.onrender.com/health` debe responder:
 
 ```json
 {"estado":"ok","baseDeDatos":"conectada","basePlataforma":"conectada","latenciaMs":123}
@@ -211,6 +223,12 @@ servicio y cópialos. Se ven así:
 https://almuerzo-api.onrender.com
 https://almuerzo-front.onrender.com
 ```
+
+> **Copia los tuyos, no estos.** Los nombres de servicio en `onrender.com` son
+> globales: si alguien ya usó `almuerzo-api`, Render le agrega un sufijo al
+> tuyo (`almuerzo-api-a1b2.onrender.com`). Esta guía usa los nombres limpios
+> como ejemplo, pero lo que vale es lo que diga tu dashboard. Un dominio mal
+> copiado aquí es la causa más probable de que el paso 7 no funcione.
 
 En **`almuerzo-api`** → Environment, completa las dos que dejaste vacías:
 

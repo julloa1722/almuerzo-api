@@ -587,32 +587,22 @@ notificación al entregar un pedido, los headers de `helmet`, y el `429`
 del rate limiting — se validó end-to-end contra la API real corriendo
 durante el desarrollo.
 
-### Desplegar a Render (pendiente — requiere que primero exista control de versiones)
+### Desplegar a Render
 
-**Se descubrió durante este sprint que el proyecto todavía no es un
-repositorio git** — 8 sprints construidos sin control de versiones. Render
-se conecta a un repo de GitHub para desplegar en cada push; sin git, ese
-camino no existe. Antes de seguir con esto hace falta `git init`, un primer
-commit, y un repositorio en GitHub — **una acción que crea infraestructura
-nueva y compartida, así que se confirma contigo explícitamente antes de
-tocarla** (no se hizo todavía).
+**La guía completa, paso a paso, está en [`GUIA-DESPLIEGUE.md`](GUIA-DESPLIEGUE.md).**
+Se separó de este README en el Sprint 20, cuando el despliegue dejó de ser
+una nota pendiente y pasó a ser un procedimiento real: dos servicios (API y
+frontend), migraciones automáticas en cada arranque, y una forma de crear el
+primer administrador sin sembrar datos de demo.
 
-Una vez que exista el repo en GitHub, los pasos para desplegar (con
-`render.yaml` ya preparado en la raíz de este proyecto):
+Lo que hay que saber en una línea: el proyecto ya está en GitHub
+(`https://github.com/julloa1722/almuerzo-api`), `render.yaml` describe los dos
+servicios, y Render los levanta desde un solo blueprint. Las credenciales
+reales se cargan en el dashboard de Render, nunca en el repositorio.
 
-1. Crea una cuenta gratuita en [render.com](https://render.com).
-2. "New" → "Blueprint" → conecta tu repositorio de GitHub. Render detecta
-   `render.yaml` automáticamente.
-3. En el dashboard, completa las variables marcadas `sync: false`:
-   `DATABASE_URL`, `MIGRATE_DATABASE_URL`, `PLATFORM_DATABASE_URL` (la rama
-   de **producción** de tu proyecto en Neon — no la de `dev` que usas
-   localmente), `JWT_SECRET` (genera uno nuevo, no reutilices el de
-   desarrollo), y opcionalmente `RESEND_API_KEY`/`RESEND_FROM_EMAIL`.
-4. Antes del primer deploy, corre `npm run migrate` **contra la base de
-   producción** desde tu máquina (con `MIGRATE_DATABASE_URL` apuntando a
-   esa rama de Neon) — Render no corre migraciones automáticamente.
-5. Deploy. Verifica `https://tu-servicio.onrender.com/health` — debe
-   responder `estado: ok` con la base de producción conectada.
+> La versión anterior de esta sección decía que el despliegue estaba bloqueado
+> porque el proyecto no era un repositorio git. Eso se resolvió el 16 de
+> septiembre de 2026.
 
 ## 25. Fuera de alcance del Sprint 9 (a propósito)
 

@@ -1,5 +1,88 @@
 # CHANGELOG
 
+## Sprint 20 — Despliegue real: API + frontend + base fuera de esta máquina (18 de septiembre de 2026)
+
+Construido y probado localmente contra Neon; **falta que el usuario lo
+ejecute en Render**. Reemplaza y amplía al subsprint 9.4, que solo
+contemplaba la API y quedó preparado pero nunca corrido. Desglose completo
+en `plan-sprints.md`, Sprint 20.
+
+**Diagnóstico previo.** Antes de escribir código se mapeó el estado real
+del proyecto contra un despliegue de verdad. Seis hallazgos impedían
+desplegar y cinco más habrían roto el servicio ya desplegado. Los
+verificados y corregidos aquí:
+
+- **El build fallaba antes de empezar.** `render.yaml` declaraba
+  `NODE_ENV=production`, y Render inyecta las variables del servicio también
+  durante el build; con eso `npm ci` omite devDependencies, donde vive
+  `typescript`. El `buildCommand` moría con `tsc: not found`. Corregido con
+  `npm ci --include=dev`.
+- **Los enlaces de invitación y de recuperación de contraseña habrían dado
+  404.** El frontend usa `BrowserRouter` y esas dos rutas llegan por correo,
+  o sea se abren directamente. Un host estático busca un archivo en esa ruta
+  y no lo encuentra. Corregido con la regla de rewrite `/* → /index.html` en
+  el blueprint.
+- **`CORS_ORIGENES` no estaba declarada**, así que la API habría quedado
+  aceptando solo `http://localhost:5176` y el navegador habría bloqueado
+  cada request del frontend desplegado.
+- **No existía forma de crear el primer SUPERADMIN** de una base limpia sin
+  correr `npm run seed`, que siembra la demo con contraseñas publicadas en
+  el README. El sistema de invitaciones del Sprint 18 no sirve para
+  arrancar: exige estar ya autenticado. Resuelto con
+  `scripts/crear-admin.js`.
+- **Ningún pool registraba `pool.on('error')`.** Neon en plan gratuito
+  autosuspende el compute y corta conexiones ociosas; un `'error'` sin
+  listener en un `EventEmitter` tumba el proceso entero. Se habría visto
+  como reinicios espontáneos sin request asociado, imposibles de explicar
+  leyendo los logs.
+- **Sin `trust proxy`**, el rate limit de `/auth/login` (5 por minuto) se
+  habría vuelto global: detrás del balanceador de Render todos los requests
+  llegan con la misma IP, así que cinco intentos fallidos de cualquiera
+  habrían bloqueado el login de toda la plataforma.
+
+**Backend:** `src/db/db.module.ts` — listener de `error` en ambos pools,
+opciones explícitas (`connectionTimeoutMillis` 15s, `max` 5, `statement_timeout`
+30s; sin el primero, un query contra un Neon dormido esperaba para siempre,
+incluido `/health`), y `CierreDePools` que cierra ambos ante SIGTERM.
+`src/main.ts` — `enableShutdownHooks()`, `trust proxy` condicionado a
+`CONFIAR_EN_PROXY` (activarlo sin proxy real permitiría falsificar la IP y
+evadir el rate limit), normalización del esquema en `CORS_ORIGENES`, `PORT`
+leído como número, y el log de arranque ya no dice `localhost`.
+`src/health/health.controller.ts` — prueba los **dos** pools y nunca lanza:
+responde 503 con el motivo por cada base en vez de un 500 genérico.
+
+**Scripts:** `scripts/crear-admin.js` nuevo — crea un usuario y su membresía
+`PLATAFORMA`/`SUPERADMIN`, y nada más; idempotente, sirve también para
+recuperar el acceso. `scripts/migrate.js` — `pg_advisory_lock` (ahora corre
+en cada arranque, así que un redeploy que coincida con un arranque en frío ya
+no revienta contra la PK de `schema_migrations`) y el mensaje de rollback
+corregido, que sugería `docker compose` en un proyecto que decidió no usar
+Docker. `scripts/seed.js` — aborta si `NODE_ENV=production`, salvo
+`-- --forzar`.
+
+**Frontend:** `frontend/src/lib/base-url.ts` nuevo — la URL base de la API
+estaba copiada literalmente en 4 archivos; se centraliza porque el despliegue
+necesita normalizar el valor, y arreglarlo en un solo lugar es la diferencia
+entre que funcione y que funcione en tres de cuatro pantallas. Render entrega
+el hostname sin `https://` al enlazar servicios, y un fetch contra eso pegaría
+contra el propio frontend.
+
+**Configuración y docs:** `render.yaml` reescrito con los dos servicios y las
+variables enlazadas entre ellos (`JWT_SECRET` con `generateValue`, para que no
+pase por el portapapeles). `GUIA-DESPLIEGUE.md` nuevo — guía de 7 pasos, con
+qué esperar del plan gratuito y una sección de fallos concretos. `package.json`
+con `engines`. La sección de despliegue del README, que decía que estaba
+bloqueado por falta de git, ahora apunta a la guía.
+
+**Probado contra Neon real:** migraciones con el advisory lock (idempotentes,
+"nada que aplicar"), las tres validaciones de `crear-admin`, su inserción real
+y su idempotencia al correrlo dos veces, la guarda del seed, y `/health`
+devolviendo `200` con ambas bases conectadas. El usuario de prueba creado se
+borró después, verificando que no quedara rastro. Los dos builds compilan.
+
+**No verificable en esta máquina:** el cierre limpio ante SIGTERM. Windows no
+tiene SIGTERM de verdad, así que esa ruta solo se ejercita en Render.
+
 ## Control de versiones real: el proyecto pasa a git y GitHub (16 de septiembre de 2026)
 
 Git sí está instalado en esta máquina ahora

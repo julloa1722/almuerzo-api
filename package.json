@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "Sprint 1 — fundacion tecnica e identidad. Backend de la plataforma de almuerzo corporativo.",
   "private": true,
+  "engines": {
+    "node": ">=22 <25"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
@@ -10,6 +13,7 @@
     "migrate": "node scripts/migrate.js",
     "migrate:down": "node scripts/migrate.js down",
     "seed": "node scripts/seed.js",
+    "crear-admin": "node scripts/crear-admin.js",
     "smoke": "node scripts/smoke-test.js",
     "prueba-e2e": "node scripts/prueba-e2e.js",
     "test": "node test/tenant-isolation.test.js",

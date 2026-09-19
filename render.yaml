@@ -1,34 +1,108 @@
-# Blueprint de Render (Sprint 9.4) — plan gratuito.
-# Variables con "sync: false" se configuran a mano en el dashboard de
-# Render, nunca en este archivo (secretos reales no se commitean).
-# Ver README.md, sección "Desplegar a Render", para la guía paso a paso.
+# Blueprint de Render (Sprint 20) — plan gratuito, dos servicios.
+#
+# Variables con "sync: false" se configuran a mano en el dashboard de Render,
+# nunca en este archivo (secretos reales no se commitean).
+# Las variables con "fromService" las resuelve Render sola, enlazando un
+# servicio con el otro — por eso ambos viven en el mismo blueprint.
+#
+# Ver GUIA-DESPLIEGUE.md para el paso a paso.
 
 services:
+  # ---------------------------------------------------------------------
+  # API (NestJS)
+  # ---------------------------------------------------------------------
   - type: web
     name: almuerzo-api
     runtime: node
     plan: free
-    buildCommand: npm ci && npm run build
-    startCommand: npm run start
+    # `--include=dev` es obligatorio, no cosmético: NODE_ENV=production (abajo)
+    # también aplica durante el build, y con eso npm omite devDependencies —
+    # donde vive `typescript`. Sin esta bandera el build muere con
+    # "tsc: not found" y el deploy nunca arranca.
+    buildCommand: npm ci --include=dev && npm run build
+    # Las migraciones corren en cada arranque, antes de levantar la API
+    # (decisión del Sprint 20). Si una migración falla, el servicio no
+    # arranca — que es el comportamiento correcto: mejor caído que sirviendo
+    # contra un esquema equivocado. `migrate.js` es idempotente y toma un
+    # advisory lock, así que arrancar dos veces seguidas no rompe nada.
+    startCommand: npm run migrate && npm run start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 3000
+      # Activa 'trust proxy' en Express. Correcto SOLO porque Render pone un
+      # balanceador delante; sin proxy real esto permitiría falsificar la IP
+      # y evadir el rate limit del login. Ver src/main.ts.
+      - key: CONFIAR_EN_PROXY
+        value: 'true'
+      # El Logger de Nest colorea la salida si no existe NO_COLOR, sin mirar
+      # si hay TTY. Sin esto los logs de Render salen con códigos ANSI.
+      - key: NO_COLOR
+        value: '1'
+      # PORT no se declara a propósito: Render lo inyecta y src/main.ts lo lee.
+      #
+      # Las tres cadenas de conexión apuntan a la rama de PRODUCCIÓN de Neon,
+      # no a la de desarrollo. MIGRATE_DATABASE_URL hace falta aquí porque las
+      # migraciones corren dentro del contenedor (ver startCommand); es la
+      # credencial más poderosa de la base, y ese es el precio consciente de
+      # automatizar las migraciones — está anotado en plan-sprints.md,
+      # Sprint 20.3.
       - key: DATABASE_URL
         sync: false
       - key: MIGRATE_DATABASE_URL
         sync: false
       - key: PLATFORM_DATABASE_URL
         sync: false
+      # Render genera un valor aleatorio en el primer deploy y lo conserva.
+      # Mejor que pegarlo a mano: nunca pasa por el portapapeles ni por un
+      # archivo. Ojo: al rotarlo, todas las sesiones abiertas se invalidan.
       - key: JWT_SECRET
-        sync: false
+        generateValue: true
       - key: JWT_EXPIRES_IN
         value: 15m
       - key: JWT_REFRESH_EXPIRES_IN
         value: 7d
+      # Orígenes permitidos por CORS. Render resuelve el hostname del frontend
+      # automáticamente; src/main.ts le agrega el https:// que falta.
+      - key: CORS_ORIGENES
+        fromService:
+          name: almuerzo-front
+          type: web
+          property: host
+      # Opcionales: sin ellas las notificaciones quedan registradas como
+      # OMITIDA, sin romper ningún request (Sprint 9.2).
       - key: RESEND_API_KEY
         sync: false
       - key: RESEND_FROM_EMAIL
         sync: false
+
+  # ---------------------------------------------------------------------
+  # Frontend (React + Vite, sitio estático)
+  # ---------------------------------------------------------------------
+  - type: web
+    name: almuerzo-front
+    runtime: static
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: ./frontend/dist
+    # SIN ESTA REGLA EL SISTEMA DE INVITACIONES SE ROMPE.
+    #
+    # El frontend usa BrowserRouter (frontend/src/App.tsx), así que las rutas
+    # profundas no son archivos en disco. Dos de ellas llegan por correo y se
+    # abren directamente en el navegador: /invitacion/:token y
+    # /restablecer-password/:token. Sin este rewrite, un host estático busca
+    # un archivo en esa ruta, no lo encuentra, y devuelve 404 — o sea nadie
+    # podría aceptar una invitación ni recuperar su contraseña.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      # Vite inyecta esto en BUILD TIME, no en runtime: si cambias este valor
+      # hay que redesplegar el frontend para que tenga efecto.
+      # Render entrega el hostname sin esquema; frontend/src/lib/base-url.ts
+      # le agrega el https://.
+      - key: VITE_API_URL
+        fromService:
+          name: almuerzo-api
+          type: web
+          property: host

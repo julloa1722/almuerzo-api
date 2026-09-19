@@ -5,7 +5,7 @@ import { ApiError } from '../../lib/api';
 import { Aviso } from '../Aviso';
 import type { Empresa, ImportarCsvResponse, PreviewCsvResponse } from '../../types';
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+import { BASE_URL } from '../../lib/base-url';
 const RNC_RE = /^\d{3}-?\d{5,8}-?\d?$/;
 
 const PASOS = [

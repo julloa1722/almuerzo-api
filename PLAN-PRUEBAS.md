@@ -844,3 +844,94 @@ Con la API corriendo y `cd frontend && npm run dev`:
 (descontarla de la liquidación a suplidores), trazabilidad de otras
 entidades (contratos, leads, ciclos) — ninguno existe, ver "Fuera de
 alcance" del Sprint 14 en `plan-sprints.md`.
+
+---
+
+## 20. Sprint 20 — Despliegue real (API + frontend + base en internet)
+
+**Estado: construido y probado localmente el 18 de septiembre de 2026.
+Pendiente de que lo ejecutes en Render.**
+
+Este tramo es distinto a todos los anteriores: no se corre contra
+`localhost`, y su criterio de éxito es que funcione **con tu computadora
+apagada**. El paso a paso completo está en `GUIA-DESPLIEGUE.md`; aquí va
+solo la verificación.
+
+### 20.a — Antes de desplegar, en tu máquina
+
+```bash
+npm run build                 # debe terminar en 0
+cd frontend && npm run build  # debe terminar en 0, y volver con: cd ..
+npm run migrate               # "Tomando el lock de migraciones ..." y luego
+                              # "Nada que aplicar" contra tu base de dev
+```
+
+La guarda del seed, que evita sembrar la demo en una base real:
+
+```powershell
+$env:NODE_ENV = "production"
+npm run seed            # debe ABORTAR con un mensaje, sin tocar la base
+$env:NODE_ENV = "development"
+```
+
+Las validaciones de `crear-admin` (ninguna toca la base):
+
+```bash
+node scripts/crear-admin.js                                    # falta email y contraseña
+node scripts/crear-admin.js --email a@b.com --password corta   # contraseña muy corta
+node scripts/crear-admin.js --email no-es-email --password "frase larga y propia"
+```
+
+Las tres deben rechazar con un mensaje claro y salir con código 1.
+
+### 20.b — El despliegue
+
+Sigue `GUIA-DESPLIEGUE.md` de principio a fin. Al terminar el paso 5, los
+logs de `almuerzo-api` en Render deben mostrar las 18 migraciones
+aplicándose solas, y luego:
+
+```
+almuerzo-api escuchando en el puerto 10000
+CORS permitido para: https://almuerzo-front.onrender.com
+```
+
+**Verificación de la API** — abre en el navegador:
+
+```
+https://almuerzo-api.onrender.com/health
+```
+
+Esperado: `{"estado":"ok","baseDeDatos":"conectada","basePlataforma":"conectada",...}`
+
+Si dice `degradado`, el mismo JSON indica cuál de las dos bases falló y por
+qué. Casi siempre es una contraseña mal copiada.
+
+### 20.c — El recorrido que cierra el sprint
+
+1. **Apaga tu computadora**, o al menos cierra la API y el frontend locales.
+2. Desde el **teléfono**, abre `https://almuerzo-front.onrender.com`.
+   - La primera carga puede tardar hasta un minuto: el plan gratuito
+     duerme la API tras 15 minutos sin tráfico. No está rota, está
+     despertando.
+3. Entra con el usuario que creaste en el paso 6 de la guía.
+   - **Esperado:** cae en el panel de plataforma, sin ningún dato demo —
+     ni Futuro ARS, ni Cocina Criolla, ni colaboradores ficticios.
+4. Da de alta una empresa desde el wizard de back office.
+5. Invita a alguien (RRHH, por ejemplo) y **abre el enlace de invitación
+   desde el correo**.
+   - **Esperado:** la página de aceptar invitación carga.
+   - **Este es el paso que más importa:** si da 404, la regla de rewrite
+     del sitio estático no está activa. Es el fallo que rompería el
+     sistema de invitaciones entero en producción.
+6. Prueba también la recuperación de contraseña y abre el enlace que llega
+   por correo — misma ruta profunda, mismo riesgo de 404.
+
+**Criterio de cierre:** completaste los pasos 2 a 6 desde un dispositivo que
+no es esta computadora, con la computadora apagada.
+
+### Nota sobre el correo
+
+Sin `RESEND_API_KEY` configurada, las notificaciones quedan registradas como
+`OMITIDA` y nada se rompe — pero los pasos 5 y 6 no llegan a tu bandeja y
+tendrías que sacar el token de la base a mano. Para este recorrido,
+configura Resend.

@@ -5,7 +5,7 @@ import { Aviso } from '../Aviso';
 import { InvitarColaboradoresSeccion } from './InvitarColaboradoresSeccion';
 import type { ImportarCsvResponse, PreviewCsvResponse } from '../../types';
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+import { BASE_URL } from '../../lib/base-url';
 
 /**
  * Sprint 16: autoservicio de RRHH — mismo motor de validación que el

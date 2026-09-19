@@ -64,14 +64,17 @@ desde el Sprint 10 en adelante — se agregó el 31 de julio de 2026.
 - **Ningún job en segundo plano todavía.** Estados como el congelamiento de
   `menu_dia` se calculan al vuelo contra el reloj real en cada request, no se
   guardan en una columna mutable.
-- **Hosting futuro (no construido aún):** Render (plan gratuito) para la API,
-  Neon para la base. Ver `plan-sprints.md`, Sprint 9.
+- **Hosting:** Render (plan gratuito) para la API y para el frontend como
+  sitio estático, Neon para la base. Construido en el Sprint 20 (`render.yaml`
+  + `GUIA-DESPLIEGUE.md`); falta que el usuario lo ejecute.
 
 ## Comandos que ya existen
 
 ```bash
 npm run migrate      # aplica migrations/*.sql pendientes
 npm run seed         # datos de prueba (empresas, colaboradores, suplidores, usuarios)
+                     #   aborta si NODE_ENV=production (usa -- --forzar para saltarlo)
+npm run crear-admin -- --email X --password Y   # primer SUPERADMIN, sin datos demo (Sprint 20)
 npm run build        # compila TypeScript a dist/
 npm run start        # corre la API compilada
 npm run start:dev    # con recarga automática
@@ -110,11 +113,25 @@ Revisa `plan-sprints.md` para el estado exacto de cada sprint. Al momento de
 escribir este archivo, Sprints 1–9 confirmados por el usuario (Sprint 8 con
 alcance recortado a solo el backend de contenido de ayuda — el tour visual
 y el centro de ayuda quedaron diferidos hasta que exista un frontend). El
-subsprint 9.4 (despliegue real a Render) sigue pendiente — preparado
-(`render.yaml` + guía) pero **no ejecutado**. Lo que lo bloqueaba era la
-falta de git; ahora que el código está en GitHub, Render ya puede conectarse
-al repositorio. No lo construyas sin pedirlo antes, mismo criterio de
-siempre.
+subsprint 9.4 (despliegue real a Render) quedó reemplazado por el **Sprint
+20**, que además cubre el frontend.
+
+El **Sprint 20 (despliegue real) está construido y probado localmente el 18
+de septiembre de 2026, pendiente de que el usuario lo ejecute en Render.**
+Incluye: `render.yaml` con dos servicios (API + sitio estático con rewrite
+SPA, sin el cual los enlaces de invitación y de recuperación de contraseña
+dan 404), migraciones automáticas en el `startCommand` con advisory lock,
+`scripts/crear-admin.js` para arrancar una base limpia sin datos demo,
+guarda en `seed.js` contra sembrar la demo en producción, pools con listener
+de `error` y timeouts explícitos, `trust proxy` condicionado, cierre limpio
+ante SIGTERM, y `GUIA-DESPLIEGUE.md` como entregable que el usuario sigue.
+Ver `plan-sprints.md`, Sprint 20.
+
+**Gap abierto por decisión explícita del usuario:** las contraseñas de los
+roles de base están literales en `migrations/0003_rls.sql` y `0004`, o sea
+publicadas en GitHub — y `almuerzo_platform` tiene `BYPASSRLS`. Se rotan con
+un `ALTER ROLE`, documentado como paso marcado en la guía. No lo hagas sin
+que el usuario lo pida.
 
 **Control de versiones (actualizado el 16 de septiembre de 2026):** git sí
 está instalado ahora (MinGit 2.55, en `%LOCALAPPDATA%\MinGit`) y el proyecto

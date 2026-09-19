@@ -7,7 +7,7 @@ import { fmtCorto, fmtSello, formatoRD } from '../../lib/fechas';
 import { Aviso } from '../Aviso';
 import type { CampoDisponible, CampoPlantilla, Ciclo, Movimiento } from '../../types';
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+import { BASE_URL } from '../../lib/base-url';
 
 /**
  * Sprint 12, subsprint 12.4. "Enviar a nómina" (discrepancia 2 del plan):

@@ -11,7 +11,41 @@ require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const { Client } = require('pg');
 
+/**
+ * Sprint 20: guarda contra sembrar la demo en producción.
+ *
+ * Este script crea `admin@plataforma.demo` con la contraseña `admin123456`,
+ * que está escrita en el README y en CLAUDE.md, o sea publicada en GitHub.
+ * Mientras todo corría en localhost eso daba igual; con la API expuesta en
+ * internet, correrlo por error contra la base de producción deja un
+ * SUPERADMIN con contraseña pública — acceso total a todos los tenants.
+ *
+ * El error realista no es teclear mal el comando: es tener el `.env` apuntando
+ * a producción (después de haber desplegado) y correr `npm run seed` por
+ * costumbre. Por eso la guarda mira el entorno, no los argumentos.
+ *
+ * Para poblar una base de producción de verdad: `npm run crear-admin`, que
+ * crea el primer SUPERADMIN y nada más.
+ */
+function abortarSiEsProduccion() {
+  const forzado = process.argv.includes('--forzar');
+  if (process.env.NODE_ENV === 'production' && !forzado) {
+    console.error('');
+    console.error('ABORTADO: NODE_ENV=production.');
+    console.error('');
+    console.error('Este script siembra datos de DEMO, incluido un SUPERADMIN con la');
+    console.error('contraseña "admin123456", que está publicada en el repositorio.');
+    console.error('');
+    console.error('Para una base real usa:  npm run crear-admin');
+    console.error('Si de verdad quieres sembrar la demo aquí: npm run seed -- --forzar');
+    console.error('');
+    process.exit(1);
+  }
+}
+
 async function main() {
+  abortarSiEsProduccion();
+
   // Sembrar inserta filas en `colaborador`, que tiene FORCE ROW LEVEL SECURITY.
   // Con el rol de la app (sin BYPASSRLS) cada insert necesitaría el GUC
   // app.empresa_id fijado fila por fila. Para un script administrativo de

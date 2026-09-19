@@ -22,7 +22,12 @@ async function main() {
   const modo = process.argv[2] === 'down' ? 'down' : 'up';
   if (modo === 'down') {
     console.error('Este runner no soporta rollback automático todavía.');
-    console.error('Para revertir en desarrollo: docker compose down -v && docker compose up -d && npm run migrate');
+    // El mensaje anterior sugería `docker compose down -v`, pero este proyecto
+    // decidió explícitamente no usar Docker (ver CLAUDE.md) — así que ese
+    // consejo no se podía seguir en ninguna máquina del proyecto.
+    console.error('Para volver atrás, usa el branching / point-in-time restore de Neon:');
+    console.error('  crea un branch desde un punto anterior y apunta ahí tus *_DATABASE_URL.');
+    console.error('Ojo en producción: restaurar la base NO revierte el código desplegado.');
     process.exit(1);
   }
 
@@ -34,6 +39,23 @@ async function main() {
 
   const client = new Client({ connectionString: databaseUrl });
   await client.connect();
+
+  // Sprint 20: a partir de ahora esto corre en el startCommand de Render, en
+  // cada arranque. Eso abre una ventana real de concurrencia que antes no
+  // existía: un redeploy que coincide con un arranque en frío, o el usuario
+  // corriéndolo a mano desde su máquina mientras Render reinicia. Sin lock,
+  // los dos procesos ven la misma lista de pendientes y el segundo revienta
+  // contra la PK de schema_migrations — y si eso pasa en el startCommand, el
+  // servicio no arranca.
+  //
+  // `pg_advisory_lock` es a nivel de sesión y se libera solo al cerrar la
+  // conexión, incluso si el proceso muere. El segundo proceso espera acá y
+  // luego no encuentra nada pendiente, que es exactamente lo que queremos.
+  // La constante es arbitraria pero fija: identifica "las migraciones de este
+  // proyecto".
+  const LOCK_ID = 4120250920;
+  console.log('Tomando el lock de migraciones ...');
+  await client.query('SELECT pg_advisory_lock($1)', [LOCK_ID]);
 
   await client.query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (

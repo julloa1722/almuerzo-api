@@ -15,6 +15,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { OPCIONES_CSV } from '../common/subida-csv';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../common/jwt-auth.guard';
 import { Roles, RolesGuard } from '../common/roles.guard';
@@ -97,7 +98,7 @@ export class BackOfficeController {
   // "preview" nunca escribe en la base; "importar" sí, y solo las filas sin errores.
 
   @Post('empresas/:empresaId/colaboradores/preview')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', OPCIONES_CSV))
   async previsualizarColaboradores(
     @Req() req: Request,
     @Param('empresaId', ParseIntPipe) empresaId: number,
@@ -111,7 +112,7 @@ export class BackOfficeController {
   }
 
   @Post('empresas/:empresaId/colaboradores/importar')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', OPCIONES_CSV))
   async importarColaboradores(
     @Req() req: Request,
     @Param('empresaId', ParseIntPipe) empresaId: number,

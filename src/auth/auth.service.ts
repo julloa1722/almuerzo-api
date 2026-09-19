@@ -12,9 +12,13 @@ import { Pool } from 'pg';
 import { PG_POOL } from '../db/db.module';
 import { Ambito } from '../common/tipos';
 import { enviarNotificacion } from '../common/notificaciones';
+import { urlDelFrontend } from '../common/url-publica';
 import { LoginDto, RegistroDto } from './dto';
 
-const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5176';
+// Sprint 20: ver src/common/url-publica.ts. Se resuelve al vuelo y con el
+// esquema normalizado — antes quedaba congelada al cargar el módulo, así que
+// sin FRONTEND_URL en producción los correos de recuperación apuntaban a
+// localhost y nadie podía restablecer su contraseña.
 const HORAS_VIGENCIA_RECUPERACION = 1;
 /** Mensaje único a propósito — no distingue "no existe" de "venció" de "ya
  * se usó", para no filtrar qué correos tienen cuenta ni el estado exacto
@@ -36,26 +40,10 @@ export class AuthService {
     private readonly jwt: JwtService,
   ) {}
 
-  async registrar(dto: RegistroDto) {
-    if (!dto.email || !dto.password) {
-      throw new BadRequestException('email y password son obligatorios.');
-    }
-    if (dto.password.length < 8) {
-      throw new BadRequestException('La contraseña debe tener al menos 8 caracteres.');
-    }
-
-    const existente = await this.pool.query('SELECT id FROM usuario WHERE email = $1', [dto.email]);
-    if (existente.rowCount) {
-      throw new ConflictException('Ya existe una cuenta con ese correo.');
-    }
-
-    const hash = await bcrypt.hash(dto.password, 10);
-    const { rows } = await this.pool.query(
-      `INSERT INTO usuario (email, password_hash) VALUES ($1, $2) RETURNING id, email`,
-      [dto.email, hash],
-    );
-    return { usuarioId: rows[0].id, email: rows[0].email };
-  }
+  // `registrar()` se eliminó en el Sprint 20 junto con su ruta — ver el
+  // comentario en `AuthController`. El alta de usuarios es por invitación
+  // (Sprint 18) o, para el primer administrador de una base nueva,
+  // `scripts/crear-admin.js`.
 
   /**
    * Login sin ámbito: solo confirma identidad y devuelve las membresías
@@ -137,7 +125,7 @@ export class AuthService {
 
     const client = await this.pool.connect();
     try {
-      const link = `${FRONTEND_URL}/restablecer-password/${token}`;
+      const link = `${urlDelFrontend()}/restablecer-password/${token}`;
       await enviarNotificacion(client, {
         tipo: 'RECUPERACION_PASSWORD',
         destinatario: email.trim(),

@@ -127,6 +127,21 @@ de `error` y timeouts explícitos, `trust proxy` condicionado, cierre limpio
 ante SIGTERM, y `GUIA-DESPLIEGUE.md` como entregable que el usuario sigue.
 Ver `plan-sprints.md`, Sprint 20.
 
+**Revisión de pre-vuelo (19 de septiembre de 2026):** antes de crear el
+blueprint se revisó lo que el mapeo inicial no alcanzó a cubrir, y aparecieron
+**3 bloqueantes y 8 problemas reales**, todos corregidos — entre ellos una
+escalada de privilegios preexistente del Sprint 18 (cualquier RRHH podía
+quedarse con la sesión del SUPERADMIN vía invitación + `seleccionar-ambito`),
+`fromService` de Render devolviendo el hostname privado en vez del dominio
+público, y `FRONTEND_URL` sin declarar, que habría mandado todos los correos de
+invitación apuntando a `localhost`. Se eliminó `POST /auth/registro`. Detalle
+en `plan-sprints.md`, Sprint 20, "Revisión de pre-vuelo". Dos consecuencias
+para quien siga trabajando aquí: el despliegue tiene ahora un **paso 5b
+manual** (cargar `CORS_ORIGENES`, `FRONTEND_URL` y `VITE_API_URL` con los
+dominios reales y redesplegar), y `npm run seed` aborta si la base destino no
+es local — se declara `SEED_HOST_PERMITIDO` en el `.env` para desarrollar
+contra Neon.
+
 **Gap abierto por decisión explícita del usuario:** las contraseñas de los
 roles de base están literales en `migrations/0003_rls.sql` y `0004`, o sea
 publicadas en GitHub — y `almuerzo_platform` tiene `BYPASSRLS`. Se rotan con

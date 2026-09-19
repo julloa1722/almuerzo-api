@@ -12,6 +12,14 @@ interface InvitacionInfo {
   ambito_tipo: string;
   nombre_ambito: string;
   vigente: boolean;
+  /**
+   * Sprint 20: si ese correo ya tiene cuenta, el backend exige la contraseña
+   * ACTUAL en vez de crear una nueva (cierra una escalada de privilegios —
+   * ver src/invitaciones/invitaciones.service.ts). La pantalla cambia de
+   * "define una contraseña" a "confirma con tu contraseña" para que el
+   * usuario no escriba una nueva y choque con un error que no entiende.
+   */
+  usuario_existe?: boolean;
 }
 
 const ROL_ETIQUETA: Record<string, string> = {
@@ -43,12 +51,16 @@ export function AceptarInvitacionPage() {
     retry: false,
   });
 
+  const cuentaExistente = info?.usuario_existe === true;
+
   async function aceptar() {
     if (password.length < 8) {
       setError('La contraseña debe tener al menos 8 caracteres.');
       return;
     }
-    if (password !== confirmar) {
+    // Con una cuenta ya existente no se define nada: se confirma la que ya
+    // tiene, así que pedir que la repita solo estorba.
+    if (!cuentaExistente && password !== confirmar) {
       setError('Las contraseñas no coinciden.');
       return;
     }
@@ -93,24 +105,35 @@ export function AceptarInvitacionPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="card max-w-[420px] w-full">
-        <h2>Activa tu cuenta</h2>
+        <h2>{cuentaExistente ? 'Confirma la invitación' : 'Activa tu cuenta'}</h2>
         <p className="text-[13.5px] text-muted mt-1 mb-4">
-          Te invitaron como <b>{ROL_ETIQUETA[info.rol] ?? info.rol}</b> de <b>{info.nombre_ambito}</b>. Define una
-          contraseña para <span className="mono">{info.email}</span>.
+          Te invitaron como <b>{ROL_ETIQUETA[info.rol] ?? info.rol}</b> de <b>{info.nombre_ambito}</b>.{' '}
+          {cuentaExistente ? (
+            <>
+              <span className="mono">{info.email}</span> ya tiene una cuenta, así que escribe tu contraseña
+              actual para confirmar que eres tú.
+            </>
+          ) : (
+            <>
+              Define una contraseña para <span className="mono">{info.email}</span>.
+            </>
+          )}
         </p>
 
         {error && <Aviso tipo="no">{error}</Aviso>}
 
         <div className="campo">
-          <label>Contraseña (mínimo 8 caracteres)</label>
+          <label>{cuentaExistente ? 'Tu contraseña actual' : 'Contraseña (mínimo 8 caracteres)'}</label>
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
-        <div className="campo">
-          <label>Repite la contraseña</label>
-          <input type="password" value={confirmar} onChange={(e) => setConfirmar(e.target.value)} />
-        </div>
+        {!cuentaExistente && (
+          <div className="campo">
+            <label>Repite la contraseña</label>
+            <input type="password" value={confirmar} onChange={(e) => setConfirmar(e.target.value)} />
+          </div>
+        )}
         <button className="btn" disabled={cargando} onClick={aceptar}>
-          {cargando ? 'Activando…' : 'Activar cuenta y entrar'}
+          {cargando ? 'Activando…' : cuentaExistente ? 'Confirmar y entrar' : 'Activar cuenta y entrar'}
         </button>
       </div>
     </div>

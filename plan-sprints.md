@@ -3064,3 +3064,148 @@ respeta. La guía de despliegue del subsprint 20.6 incluye el `ALTER ROLE`
 como paso claramente marcado, para que rotarlas sea cuestión de dos minutos
 cuando quiera hacerlo. Anotado también en "Gaps identificados" al inicio de
 este documento.
+
+### Revisión de pre-vuelo (19 de septiembre de 2026) — 3 bloqueantes y 8 problemas reales
+
+Con el Sprint 20 ya construido y subido a GitHub, antes de crear el blueprint
+en Render se corrió una revisión de pre-vuelo sobre cuatro dimensiones que el
+mapeo inicial nunca alcanzó a cubrir: inventario exhaustivo de variables de
+entorno, seguridad al quedar expuesto a internet, corrección del código recién
+escrito, y exactitud de la guía. Cada hallazgo bloqueante se verificó
+adversarialmente contra el código; ninguno pudo refutarse.
+
+Fue la decisión correcta: **el código que ya estaba publicado tenía tres
+bloqueantes**, y desplegarlo habría producido un sistema roto y con un agujero
+de seguridad abierto.
+
+#### Bloqueante 1 — Escalada de privilegios: cualquier RRHH podía tomar el control de la plataforma
+
+El más grave, y preexistente desde el Sprint 18 (no lo introdujo el 20). La
+cadena completa, verificada de punta a punta:
+
+1. RRHH crea una invitación para el **correo del SUPERADMIN**, con rol RRHH en
+   su propia empresa. Nada validaba que ese correo ya perteneciera a otra
+   persona: `InvitacionesController.crear` solo comprueba que el rol esté
+   permitido y toma el ámbito del token.
+2. `POST /invitaciones` **devuelve el token en claro** en la respuesta
+   (`crearInvitacionInterna` retornaba `{ ...fila, link }`).
+3. Acepta esa invitación con una contraseña inventada. Como el usuario ya
+   existía, `InvitacionesService.aceptar` solo tomaba su `id` — **sin
+   verificar ninguna contraseña**.
+4. Recibe un `accessToken` cuyo `sub` es el usuario del SUPERADMIN.
+5. Llama a `POST /auth/seleccionar-ambito`, que lista **todas las membresías
+   de ese `sub`** — incluida `PLATAFORMA`/`SUPERADMIN` — y le firma el token
+   correspondiente. Los `membresiaId` son enteros secuenciales.
+
+Resultado: sesión de SUPERADMIN con `BYPASSRLS`, o sea acceso de lectura y
+escritura a todas las empresas y suplidores, saltándose el aislamiento que
+sostiene el diseño entero del sistema.
+
+**Arreglo:** `aceptar` exige ahora la contraseña real cuando el correo ya tiene
+cuenta (`bcrypt.compare`). Un dueño legítimo que suma un ámbito nuevo la sabe;
+quien solo robó el token, no. `verPorToken` devuelve además `usuario_existe`
+para que la pantalla pida "tu contraseña actual" en vez de "define una nueva",
+y no confunda a quien sí tiene derecho a entrar.
+
+**Arreglo complementario:** se eliminó `POST /auth/registro`. Permitía
+apropiarse de un correo ajeno *antes* de que llegara su invitación, lo que
+debilitaba el arreglo anterior (el atacante sería el dueño de esa contraseña);
+era además un oráculo de enumeración de correos (respondía 409 "ya existe"); y
+no servía para nada, porque creaba un `usuario` sin ninguna `membresia`. No lo
+llamaba nadie: ni el frontend, ni los tests, ni los scripts.
+
+#### Bloqueante 2 — `fromService` no da el dominio público: el frontend no habría encontrado la API
+
+`render.yaml` enlazaba `VITE_API_URL` y `CORS_ORIGENES` con
+`fromService: { property: host }`. La referencia de blueprints de Render
+define `host` como *el hostname del servicio en la red privada*, no el dominio
+público `onrender.com`. Consecuencias: el navegador nunca manda ese valor en el
+header `Origin`, así que CORS habría bloqueado todos los requests; y el
+frontend habría intentado llamar a un host que no existe fuera de la red
+interna de Render.
+
+Este era exactamente el riesgo que se había marcado como "no verificado" al
+cerrar el Sprint 20 — resultó real, y peor de lo estimado (se sospechaba una
+dependencia circular; el problema era el valor mismo).
+
+**Arreglo:** ambas pasan a `sync: false` y se cargan a mano tras el primer
+deploy, con un **paso 5b** nuevo en `GUIA-DESPLIEGUE.md`. No hay alternativa:
+el dominio público no es obtenible desde el blueprint. La guía advierte además
+que `VITE_API_URL` se inyecta en *build time*, así que cambiarla exige
+redesplegar el frontend — guardarla no basta.
+
+#### Bloqueante 3 — `FRONTEND_URL` sin declarar: las invitaciones habrían salido apuntando a `localhost`
+
+`src/auth/auth.service.ts` y `src/invitaciones/invitaciones.controller.ts`
+leían `process.env.FRONTEND_URL ?? 'http://localhost:5176'` **como constante de
+módulo**, congelada al cargar. La variable no existía en `render.yaml`, ni en
+`.env.example`, ni en `VARIABLES_CRITICAS`. La API habría arrancado sin una
+queja, `/health` habría dicho `ok`, y cada correo de invitación y de
+recuperación de contraseña habría llevado un enlace a `http://localhost:5176`.
+Nadie habría podido activar su cuenta ni recuperar su acceso, y el síntoma solo
+aparece cuando alguien se queja.
+
+Tres agentes independientes lo encontraron por separado.
+
+**Arreglo:** `src/common/url-publica.ts` centraliza la resolución y normaliza
+el esquema; se lee al vuelo, no al cargar el módulo; se declara en
+`render.yaml` y en `.env.example`; y `validar-entorno.ts` la exige cuando
+`NODE_ENV=production`, de modo que **la API se niega a arrancar** en vez de
+mandar correos rotos en silencio. La guía advierte que el primer deploy fallará
+por esto, y que es lo esperado.
+
+#### Los otros 8, todos corregidos
+
+- **`/health` filtraba el host de la base.** Regresión introducida por el
+  propio Sprint 20 al agregar el motivo del fallo a la respuesta: el mensaje de
+  error de `pg` incluye el host de Neon, que es hoy lo único que protege la
+  base, porque las contraseñas de los roles están publicadas en las migraciones
+  (ver el gap más abajo). Ahora el detalle va al log del servidor y hacia afuera
+  sale una etiqueta estable (`credenciales-invalidas`, `base-no-existe`,
+  `inalcanzable`, `timeout`), que además es más útil para diagnosticar.
+- **Los tokens quedaban escritos en los logs**, porque viajan en la URL
+  (`/invitaciones/:token`, `/auth/restablecer-password/:token`). Quien leyera
+  los logs podía tomar una invitación ajena o restablecer la contraseña de
+  otro: el token *es* la credencial. `RequestLoggingInterceptor` los enmascara
+  ahora (`/invitaciones/***`).
+- **El rate limit cubría 2 de 7 endpoints públicos.** Se agregó a
+  `/auth/restablecer-password/:token` (10/min), a los dos públicos de
+  invitaciones (20 y 10/min) y a `/auth/seleccionar-ambito` (20/min, porque los
+  `membresiaId` son secuenciales y se podían barrer).
+- **Subida de CSV sin límite de tamaño.** Los cuatro `FileInterceptor('file')`
+  corrían con los defaults de multer. Con la API pública en un contenedor de
+  512 MB, un archivo grande bastaba para tumbar el servicio, sin más privilegio
+  que ser un RRHH cualquiera. Límite en `src/common/subida-csv.ts`: 2 MB y un
+  archivo.
+- **La guarda del seed no protegía el caso que ella misma documentaba.** Miraba
+  `NODE_ENV`, pero el error realista es tener el `.env` apuntando a producción
+  y correr `npm run seed` por costumbre — y ahí `NODE_ENV` sigue diciendo
+  `development`. El peligro está en el **destino**, no en el entorno. Ahora
+  aborta si la base no es local, con `SEED_HOST_PERMITIDO` como escotilla
+  declarada para quien desarrolla contra Neon.
+- **La llamada a Resend no tenía timeout** y ocurre dentro del request,
+  reteniendo una conexión del pool (que tiene `max` 5). Si Resend se colgaba,
+  unos pocos envíos simultáneos agotaban el pool y la API entera dejaba de
+  responder, por un servicio de correo que es opcional. `AbortSignal.timeout(8000)`.
+- **El build del frontend no llevaba `--include=dev`**, igual que el bug ya
+  corregido en la API: todo el tooling (vite, typescript, tailwind) vive en
+  devDependencies.
+- **`CORS_ORIGENES` tampoco era obligatoria en producción.** Se sumó a las
+  variables que se exigen al arrancar cuando `NODE_ENV=production`.
+
+#### Verificación
+
+Además de las 10 suites de tests (todas pasan), se escribió una verificación
+específica que **reproduce el ataque de escalada de privilegios** contra la API
+real y comprueba que ahora falla: `POST /auth/registro` responde 404, `/health`
+no revela el host, el intento con contraseña inventada devuelve 401 sin
+`accessToken`, la invitación sigue `PENDIENTE` tras el intento, y el dueño
+legítimo sí puede aceptar con su contraseña real (el flujo no se rompió). Los
+logs confirman el enmascarado. Los datos de prueba se borraron al terminar.
+
+#### Nota de proceso
+
+La revisión se ejecutó en segundo plano y se detuvo sola antes de completar su
+última dimensión —exactitud de `GUIA-DESPLIEGUE.md`—, que por tanto **no tiene
+veredicto**. Las otras tres sí reportaron. Queda anotado para no dar por
+revisado algo que no lo fue.

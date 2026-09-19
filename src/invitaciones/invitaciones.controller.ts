@@ -14,17 +14,22 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { Request } from 'express';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { PoolClient } from 'pg';
 import { JwtAuthGuard } from '../common/jwt-auth.guard';
 import { Roles, RolesGuard } from '../common/roles.guard';
 import { TenantContextInterceptor } from '../common/tenant-context.interceptor';
 import { enviarNotificacion } from '../common/notificaciones';
+import { urlDelFrontend } from '../common/url-publica';
 import { InvitacionesService } from './invitaciones.service';
 import { AceptarInvitacionDto, CrearInvitacionDto, InvitarMasivoDto, RolInvitacion } from './dto';
 
 const ROLES_EMPRESA: RolInvitacion[] = ['RRHH', 'ADMIN_EMPRESA', 'COLABORADOR'];
 const DIAS_VIGENCIA = 7;
-const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:5176';
+// Sprint 20: se lee al vuelo (no una constante de módulo) y se normaliza el
+// esquema. Antes era `process.env.FRONTEND_URL ?? 'http://localhost:5176'`
+// congelado al cargar el módulo — si la variable faltaba en producción, cada
+// invitación salía por correo apuntando a localhost, sin ningún aviso.
 
 /**
  * Sprint 18: cierra el gap real confirmado al construir el Sprint 15 — no
@@ -135,7 +140,7 @@ export class InvitacionesController {
       [params.email, params.rol, params.ambitoTipo, params.ambitoId, params.colaboradorId, token, params.creadoPor, expiraEn],
     );
 
-    const link = `${FRONTEND_URL}/invitacion/${token}`;
+    const link = `${urlDelFrontend()}/invitacion/${token}`;
     await enviarNotificacion(db, {
       tipo: 'INVITACION',
       destinatario: params.email,
@@ -240,13 +245,22 @@ export class InvitacionesController {
   }
 
   // ---------- Público, sin JWT ----------
+  //
+  // Sprint 20: los dos llevan throttle. Son públicos y el token de la URL es
+  // la credencial — sin límite se puede barrer el espacio de tokens, y
+  // `aceptar` además prueba contraseñas contra una cuenta existente desde que
+  // se cerró la escalada de privilegios (ver InvitacionesService.aceptar).
 
   @Get(':token')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   async verPorToken(@Param('token') token: string) {
     return this.invitaciones.verPorToken(token);
   }
 
   @Post(':token/aceptar')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   async aceptar(@Param('token') token: string, @Body() dto: AceptarInvitacionDto) {
     return this.invitaciones.aceptar(token, dto.password);
   }

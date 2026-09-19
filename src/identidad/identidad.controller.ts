@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { OPCIONES_CSV } from '../common/subida-csv';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../common/jwt-auth.guard';
 import { Roles, RolesGuard } from '../common/roles.guard';
@@ -46,7 +47,7 @@ export class IdentidadController {
    */
   @Post('preview')
   @Roles('RRHH', 'ADMIN_EMPRESA')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', OPCIONES_CSV))
   async previsualizar(
     @Req() req: Request,
     @UploadedFile() file: Express.Multer.File | undefined,
@@ -61,7 +62,7 @@ export class IdentidadController {
 
   @Post('importar')
   @Roles('RRHH', 'ADMIN_EMPRESA')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', OPCIONES_CSV))
   async importar(
     @Req() req: Request,
     @UploadedFile() file: Express.Multer.File | undefined,

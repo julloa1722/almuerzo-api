@@ -1,4 +1,10 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
@@ -29,8 +35,14 @@ export class InvitacionesService {
 
   async verPorToken(token: string) {
     const { rows } = await this.poolPlataforma.query(
+      // `usuario_existe` le dice al frontend qué pedir: "crea tu contraseña"
+      // si es una cuenta nueva, o "escribe tu contraseña actual" si ese correo
+      // ya tiene cuenta — porque desde el Sprint 20 `aceptar` la verifica.
+      // No filtra nada: hay que tener el token de la invitación para llegar
+      // aquí, y quien la creó ya conocía ese correo.
       `SELECT i.email, i.rol, i.ambito_tipo, i.ambito_id, i.estado, i.expira_en,
-              COALESCE(e.nombre, s.nombre, 'Plataforma') AS nombre_ambito
+              COALESCE(e.nombre, s.nombre, 'Plataforma') AS nombre_ambito,
+              EXISTS (SELECT 1 FROM usuario u WHERE u.email = i.email) AS usuario_existe
        FROM invitacion i
        LEFT JOIN empresa e ON i.ambito_tipo = 'EMPRESA' AND e.id = i.ambito_id
        LEFT JOIN suplidor s ON i.ambito_tipo = 'SUPLIDOR' AND s.id = i.ambito_id
@@ -58,8 +70,36 @@ export class InvitacionesService {
       if (new Date(inv.expira_en) <= new Date()) throw new BadRequestException('Esa invitación ya venció.');
 
       let usuarioId: number;
-      const { rows: existentes } = await client.query('SELECT id FROM usuario WHERE email = $1', [inv.email]);
+      const { rows: existentes } = await client.query(
+        'SELECT id, password_hash FROM usuario WHERE email = $1',
+        [inv.email],
+      );
       if (existentes.length) {
+        // Sprint 20 — agujero de escalada de privilegios, encontrado en la
+        // revisión de pre-vuelo antes de exponer esto a internet.
+        //
+        // Antes bastaba con tener el token para quedarse con la sesión de un
+        // usuario YA EXISTENTE, sin probar ninguna contraseña. La cadena
+        // completa era:
+        //   1. RRHH invita al email del SUPERADMIN a su propia empresa —
+        //      nada validaba que ese correo ya fuera de otra persona.
+        //   2. `POST /invitaciones` le devuelve el token en claro.
+        //   3. Lo acepta con cualquier contraseña: como el usuario existía,
+        //      esta rama solo tomaba su `id`.
+        //   4. Recibía un accessToken con `sub` = el usuario del SUPERADMIN.
+        //   5. `POST /auth/seleccionar-ambito` lista TODAS las membresías de
+        //      ese `sub` — incluida PLATAFORMA/SUPERADMIN — y se la firma.
+        // Resultado: control total de la plataforma y de todos los tenants.
+        //
+        // El arreglo es exigir la contraseña real. Un usuario legítimo que
+        // ya tiene cuenta y suma un ámbito nuevo la sabe; quien solo robó el
+        // token, no.
+        const coincide = await bcrypt.compare(password, existentes[0].password_hash);
+        if (!coincide) {
+          throw new UnauthorizedException(
+            'Ese correo ya tiene una cuenta. Escribe tu contraseña actual para aceptar la invitación.',
+          );
+        }
         usuarioId = existentes[0].id;
       } else {
         const hash = await bcrypt.hash(password, 10);

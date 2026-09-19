@@ -124,9 +124,19 @@ todas en el servicio `almuerzo-api`:
 | `RESEND_API_KEY` | Tu API key de [resend.com](https://resend.com), o déjala vacía |
 | `RESEND_FROM_EMAIL` | El remitente verificado en Resend, o vacío |
 
+Hay tres más — `CORS_ORIGENES`, `FRONTEND_URL` y `VITE_API_URL` — que **no
+puedes llenar todavía**, porque necesitan los dominios que Render asigna al
+crear los servicios. Déjalas vacías por ahora; el paso 5b las completa.
+
 **No** tienes que configurar `JWT_SECRET`: `render.yaml` le dice a Render que
-genere uno aleatorio y lo guarde. Tampoco `CORS_ORIGENES` ni `VITE_API_URL` —
-Render las resuelve sola enlazando un servicio con el otro.
+genere uno aleatorio y lo guarde.
+
+> **Por qué esas tres son manuales.** El blueprint puede enlazar un servicio
+> con otro, y eso se intentó — pero Render entrega ahí el hostname de la *red
+> privada*, no el dominio público de internet. Un navegador nunca manda ese
+> valor, así que CORS bloquearía todo, y un enlace de correo con ese host no
+> llevaría a ninguna parte. No hay forma de obtener el dominio público desde
+> el blueprint, así que este paso es manual por diseño de Render.
 
 > **Sin Resend** las notificaciones por correo quedan registradas como
 > `OMITIDA` y nada se rompe. Pero **las invitaciones y la recuperación de
@@ -138,6 +148,14 @@ Ahora sí: **Apply** / **Create**.
 ## Paso 5 — Esperar el primer deploy
 
 Render construye los dos servicios. Tarda entre 5 y 10 minutos la primera vez.
+
+**El primer deploy de la API va a fallar al arrancar, y está bien.** Sin
+`FRONTEND_URL` la API se niega a levantar a propósito — es preferible a
+arrancar bien y mandar correos de invitación apuntando a `localhost`, que es
+un fallo que solo descubres cuando alguien no puede entrar. El paso 5b lo
+arregla.
+
+El frontend, en cambio, sí debe construirse y publicarse sin problema.
 
 En los logs de `almuerzo-api` deberías ver, en este orden:
 
@@ -162,8 +180,52 @@ Debe responder:
 {"estado":"ok","baseDeDatos":"conectada","basePlataforma":"conectada","latenciaMs":123}
 ```
 
-Si dice `"estado":"degradado"`, el mismo JSON te dice cuál de las dos bases
-falló y por qué — casi siempre es una contraseña mal copiada.
+Si dice `"estado":"degradado"`, el JSON trae una etiqueta por cada base:
+
+| Etiqueta | Qué revisar |
+|---|---|
+| `credenciales-invalidas` | Usuario o contraseña mal copiados en esa `*_DATABASE_URL` |
+| `base-no-existe` | El nombre de la base al final de la URL |
+| `inalcanzable` | El host — ¿es la rama correcta de Neon? |
+| `timeout` | Neon despertando; reintenta en un minuto |
+
+El motivo completo queda en los logs de Render, no en la respuesta pública —
+ese mensaje incluye el host de tu base, y mientras las contraseñas de los roles
+sigan publicadas en las migraciones, ese host es lo único que la protege.
+
+## Paso 5b — Conectar los dos servicios entre sí
+
+Ahora que Render ya asignó los dominios, ve a la pestaña **Settings** de cada
+servicio y cópialos. Se ven así:
+
+```
+https://almuerzo-api.onrender.com
+https://almuerzo-front.onrender.com
+```
+
+En **`almuerzo-api`** → Environment, completa las dos que dejaste vacías:
+
+| Variable | Valor |
+|---|---|
+| `CORS_ORIGENES` | `https://almuerzo-front.onrender.com` |
+| `FRONTEND_URL` | `https://almuerzo-front.onrender.com` |
+
+En **`almuerzo-front`** → Environment:
+
+| Variable | Valor |
+|---|---|
+| `VITE_API_URL` | `https://almuerzo-api.onrender.com` |
+
+**Ahora redespliega los dos**, en este orden: primero la API (con las
+variables ya puestas debe arrancar bien esta vez), después el frontend.
+
+> **El frontend hay que redesplegarlo sí o sí.** Vite mete las variables
+> `VITE_*` dentro del código al construirlo, no las lee al ejecutarse.
+> Guardar el valor no cambia nada si no se reconstruye el bundle. Es el error
+> más común de este paso: se cambia la variable, se recarga la página, y sigue
+> apuntando al valor viejo.
+
+Con la API ya arriba, vuelve a abrir `/health` y confirma que dice `ok`.
 
 ## Paso 6 — Crear tu usuario administrador
 
@@ -243,19 +305,28 @@ git push
 `--include=dev`. Con `NODE_ENV=production`, npm omite las devDependencies, y
 `typescript` vive ahí. Revisa `render.yaml`.
 
-**El frontend carga pero todo da error de red** — es CORS. Abre la consola del
-navegador (F12). Si dice que el origen fue bloqueado, revisa `CORS_ORIGENES`
-en el servicio `almuerzo-api`: debe tener el dominio del frontend. Render la
-llena sola, pero si le pusiste un dominio propio hay que agregarlo a mano,
-separado por comas.
+**La API no arranca y el log dice que falta `FRONTEND_URL`** — no hiciste el
+paso 5b, o lo hiciste sin redesplegar. Es el comportamiento esperado, no un
+error.
+
+**El frontend carga pero todo da error de red** — dos causas posibles, en
+orden de frecuencia. (1) `VITE_API_URL` está bien puesta pero **no
+redesplegaste el frontend** después: el bundle viejo sigue apuntando a
+`localhost`. Compruébalo en la consola del navegador (F12) mirando a qué URL
+van los requests fallidos. (2) Es CORS: si la consola dice que el origen fue
+bloqueado, revisa `CORS_ORIGENES` en `almuerzo-api` — debe tener el dominio
+del frontend, con `https://`. Para varios dominios, sepáralos por comas.
 
 **Un enlace de invitación da 404** — el rewrite del sitio estático no está
 activo. Sin él, `/invitacion/:token` y `/restablecer-password/:token` no
 existen como archivos y el host devuelve 404. Está declarado en `render.yaml`
 bajo `routes`; si lo tocaste, restáuralo.
 
-**`/health` dice `degradado`** — el JSON incluye el motivo por cada base.
-Contraseña mal copiada, o el host de la rama equivocada.
+**`/health` dice `degradado`** — ver la tabla de etiquetas del paso 5.
+
+**Un correo de invitación llega con un enlace a `localhost`** — `FRONTEND_URL`
+quedó mal o se puso después de que la API arrancara. Corrígela y redespliega
+la API; las invitaciones ya mandadas hay que volver a enviarlas.
 
 **El servicio se reinicia solo, sin requests** — revisa que
 `src/db/db.module.ts` siga registrando `pool.on('error')`. Sin ese listener,

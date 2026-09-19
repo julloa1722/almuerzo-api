@@ -27,20 +27,63 @@ const { Client } = require('pg');
  * Para poblar una base de producción de verdad: `npm run crear-admin`, que
  * crea el primer SUPERADMIN y nada más.
  */
-function abortarSiEsProduccion() {
-  const forzado = process.argv.includes('--forzar');
-  if (process.env.NODE_ENV === 'production' && !forzado) {
+function abortar(motivo, detalle) {
+  console.error('');
+  console.error(`ABORTADO: ${motivo}`);
+  console.error('');
+  console.error('Este script siembra datos de DEMO, incluido un SUPERADMIN con la');
+  console.error('contraseña "admin123456", que está publicada en el repositorio.');
+  if (detalle) {
     console.error('');
-    console.error('ABORTADO: NODE_ENV=production.');
-    console.error('');
-    console.error('Este script siembra datos de DEMO, incluido un SUPERADMIN con la');
-    console.error('contraseña "admin123456", que está publicada en el repositorio.');
-    console.error('');
-    console.error('Para una base real usa:  npm run crear-admin');
-    console.error('Si de verdad quieres sembrar la demo aquí: npm run seed -- --forzar');
-    console.error('');
-    process.exit(1);
+    console.error(detalle);
   }
+  console.error('');
+  console.error('Para una base real usa:  npm run crear-admin');
+  console.error('Si de verdad quieres sembrar la demo aquí: npm run seed -- --forzar');
+  console.error('');
+  process.exit(1);
+}
+
+/**
+ * La primera versión de esta guarda (Sprint 20) solo miraba `NODE_ENV`, y la
+ * revisión de pre-vuelo encontró que no cubría el caso que ella misma
+ * describía: el error realista no es teclear mal el comando, es tener el
+ * `.env` apuntando a producción y correr `npm run seed` por costumbre — y en
+ * esa máquina `NODE_ENV` sigue diciendo `development`. La guarda miraba el
+ * entorno cuando el peligro está en el DESTINO.
+ *
+ * Ahora mira las dos cosas, y la segunda es la que de verdad protege.
+ */
+function abortarSiEsProduccion() {
+  if (process.argv.includes('--forzar')) return;
+
+  if (process.env.NODE_ENV === 'production') {
+    abortar('NODE_ENV=production.');
+  }
+
+  const url = process.env.MIGRATE_DATABASE_URL || '';
+  let host = '';
+  try {
+    host = new URL(url).hostname;
+  } catch {
+    // Si ni siquiera parsea, que falle más adelante con su propio mensaje.
+    return;
+  }
+
+  const esLocal = host === 'localhost' || host === '127.0.0.1';
+  // Escotilla para quien tenga varias ramas de desarrollo: el host permitido
+  // se declara explícitamente y se acabó la adivinanza.
+  const permitido = (process.env.SEED_HOST_PERMITIDO || '').trim();
+
+  if (esLocal) return;
+  if (permitido && host === permitido) return;
+
+  abortar(
+    `la base destino no es local (${host}).`,
+    'Si ese ES tu host de desarrollo, declaralo una vez en tu .env:\n' +
+      `  SEED_HOST_PERMITIDO=${host}\n` +
+      'y este aviso no vuelve a salir.',
+  );
 }
 
 async function main() {

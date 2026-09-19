@@ -62,13 +62,27 @@ services:
         value: 15m
       - key: JWT_REFRESH_EXPIRES_IN
         value: 7d
-      # Orígenes permitidos por CORS. Render resuelve el hostname del frontend
-      # automáticamente; src/main.ts le agrega el https:// que falta.
+      # CORS_ORIGENES y FRONTEND_URL se cargan A MANO después del primer
+      # deploy, con el dominio real del frontend. Ver el paso 5b de
+      # GUIA-DESPLIEGUE.md.
+      #
+      # Por qué no se enlazan con `fromService` (se intentó y está mal): la
+      # referencia de blueprints de Render define `property: host` como "el
+      # hostname del servicio en la RED PRIVADA" — algo como
+      # `almuerzo-front:10000`, no el dominio público `onrender.com`. Un
+      # navegador nunca manda ese valor en el header `Origin`, así que CORS
+      # bloquearía todo; y un enlace de correo con ese host no lleva a
+      # ninguna parte. No hay forma de obtener el dominio público desde el
+      # blueprint, así que este paso es manual por diseño de Render.
       - key: CORS_ORIGENES
-        fromService:
-          name: almuerzo-front
-          type: web
-          property: host
+        sync: false
+      # La URL pública del frontend, para los enlaces de invitación y de
+      # recuperación de contraseña que se mandan por correo. Si falta, la API
+      # NO ARRANCA en producción (src/common/validar-entorno.ts) — a
+      # propósito: antes arrancaba bien y mandaba correos apuntando a
+      # localhost, que es un fallo silencioso y peor.
+      - key: FRONTEND_URL
+        sync: false
       # Opcionales: sin ellas las notificaciones quedan registradas como
       # OMITIDA, sin romper ningún request (Sprint 9.2).
       - key: RESEND_API_KEY
@@ -82,7 +96,11 @@ services:
   - type: web
     name: almuerzo-front
     runtime: static
-    buildCommand: cd frontend && npm ci && npm run build
+    # `--include=dev` por la misma razón que en la API: todo el tooling de
+    # build (vite, typescript, tailwind) vive en devDependencies, así que si
+    # el entorno de build trae NODE_ENV=production, npm no los instala y
+    # `vite build` no existe. Explícito para no depender del default.
+    buildCommand: cd frontend && npm ci --include=dev && npm run build
     staticPublishPath: ./frontend/dist
     # SIN ESTA REGLA EL SISTEMA DE INVITACIONES SE ROMPE.
     #
@@ -97,12 +115,14 @@ services:
         source: /*
         destination: /index.html
     envVars:
-      # Vite inyecta esto en BUILD TIME, no en runtime: si cambias este valor
-      # hay que redesplegar el frontend para que tenga efecto.
-      # Render entrega el hostname sin esquema; frontend/src/lib/base-url.ts
-      # le agrega el https://.
+      # Se carga A MANO tras el primer deploy, con el dominio público real de
+      # la API. No se puede enlazar con `fromService` porque `property: host`
+      # da el hostname de la red privada, no el de internet (misma razón
+      # explicada arriba en CORS_ORIGENES).
+      #
+      # OJO, esto tiene una trampa: Vite inyecta las variables VITE_* en
+      # BUILD TIME, no en runtime. Después de fijar este valor hay que
+      # REDESPLEGAR el frontend — guardarlo no basta, el bundle ya construido
+      # sigue teniendo el valor viejo.
       - key: VITE_API_URL
-        fromService:
-          name: almuerzo-api
-          type: web
-          property: host
+        sync: false

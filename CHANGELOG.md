@@ -1,5 +1,57 @@
 # CHANGELOG
 
+## Revisión de pre-vuelo del Sprint 20 — 3 bloqueantes y 8 problemas reales (19 de septiembre de 2026)
+
+Con el Sprint 20 ya construido y publicado en GitHub, antes de crear el
+blueprint en Render se revisaron cuatro dimensiones que el mapeo inicial nunca
+alcanzó a cubrir. Cada bloqueante se verificó adversarialmente; ninguno pudo
+refutarse. Detalle completo en `plan-sprints.md`, Sprint 20.
+
+**Lo que ya estaba publicado tenía tres bloqueantes.** Desplegarlo habría dado
+un sistema roto y con un agujero de seguridad abierto a internet.
+
+**Bloqueante 1 — escalada de privilegios (preexistente del Sprint 18).**
+Cualquier RRHH o suplidor podía tomar el control de la plataforma: invitaba el
+correo del SUPERADMIN a su propio ámbito, `POST /invitaciones` le devolvía el
+token en claro, y `aceptar` no verificaba ninguna contraseña cuando el usuario
+ya existía — devolvía una sesión con el `sub` del SUPERADMIN. Desde ahí,
+`/auth/seleccionar-ambito` lista todas las membresías de ese `sub` y firma la
+de PLATAFORMA. Resultado: `BYPASSRLS` sobre todos los tenants. Corregido
+exigiendo la contraseña real (`bcrypt.compare`) y eliminando
+`POST /auth/registro`, que permitía apropiarse de un correo antes de que
+llegara su invitación, enumeraba correos existentes y no lo usaba nadie.
+
+**Bloqueante 2 — `fromService` no da el dominio público.** `render.yaml`
+enlazaba `VITE_API_URL` y `CORS_ORIGENES` con `property: host`, que Render
+define como el hostname de la *red privada*. CORS habría bloqueado todo y el
+frontend no habría encontrado la API. Era el riesgo marcado como "no
+verificado" al cerrar el sprint: real, y peor de lo estimado. Ambas pasan a
+`sync: false`, con un paso 5b nuevo en la guía.
+
+**Bloqueante 3 — `FRONTEND_URL` sin declarar.** Los correos de invitación y de
+recuperación de contraseña habrían salido apuntando a `http://localhost:5176`,
+sin ningún aviso: la API arranca bien y `/health` dice `ok`. Ahora se
+centraliza en `src/common/url-publica.ts`, se declara en `render.yaml` y
+`.env.example`, y la API **se niega a arrancar** sin ella en producción.
+
+**Los otros ocho:** `/health` filtraba el host de Neon (regresión del propio
+Sprint 20 — el host es hoy lo único que protege la base, con las contraseñas
+publicadas en las migraciones); los tokens quedaban escritos en los logs porque
+viajan en la URL; el rate limit cubría 2 de 7 endpoints públicos; el CSV se
+subía sin límite de tamaño (2 MB ahora — un archivo grande tumbaba el
+contenedor); la guarda del seed miraba `NODE_ENV` en vez de la base destino,
+que era justo el punto ciego que ella misma documentaba; la llamada a Resend no
+tenía timeout mientras retenía una conexión del pool; el build del frontend no
+llevaba `--include=dev`; y `CORS_ORIGENES` tampoco se exigía en producción.
+
+**Verificación:** además de las 10 suites, se escribió una prueba que
+reproduce el ataque de escalada contra la API real y comprueba que ahora falla
+—401 sin `accessToken`, invitación intacta— y que el dueño legítimo sí puede
+aceptar con su contraseña real. Los datos de prueba se borraron al terminar.
+
+**No verificado:** la cuarta dimensión de la revisión (exactitud de
+`GUIA-DESPLIEGUE.md`) se detuvo antes de reportar. Queda sin veredicto.
+
 ## Sprint 20 — Despliegue real: API + frontend + base fuera de esta máquina (18 de septiembre de 2026)
 
 Construido y probado localmente contra Neon; **falta que el usuario lo

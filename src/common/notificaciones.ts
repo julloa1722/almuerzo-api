@@ -71,6 +71,12 @@ export async function enviarNotificacion(db: PoolClient, params: NotificacionPar
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ from, to: destinatario, subject: asunto, text: cuerpo }),
+      // Sprint 20: sin timeout, `fetch` espera indefinidamente. Esta llamada
+      // ocurre DENTRO del request que la disparó, reteniendo mientras tanto
+      // una conexión del pool (que tiene max 5). Si Resend se cuelga, unos
+      // pocos envíos simultáneos agotan el pool y la API entera deja de
+      // responder — por un servicio de correo que es opcional.
+      signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) {
       const detalle = await res.text();

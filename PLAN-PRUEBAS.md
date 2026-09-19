@@ -935,3 +935,75 @@ Sin `RESEND_API_KEY` configurada, las notificaciones quedan registradas como
 `OMITIDA` y nada se rompe — pero los pasos 5 y 6 no llegan a tu bandeja y
 tendrías que sacar el token de la base a mano. Para este recorrido,
 configura Resend.
+
+### 20.d — Arreglos de la revisión de pre-vuelo (19 de septiembre de 2026)
+
+Todo esto se verificó contra la API local; se repite aquí para que puedas
+comprobarlo tú y para que quede en el recorrido.
+
+**El endpoint eliminado**, con la API corriendo:
+
+```bash
+curl -i -X POST http://localhost:3000/auth/registro -H "Content-Type: application/json" -d "{}"
+```
+
+Esperado: **404**. `POST /auth/registro` se quitó — permitía apropiarse de un
+correo antes de que llegara su invitación y enumeraba qué correos tienen
+cuenta.
+
+**`/health` no debe revelar dónde vive la base.** Pon a propósito una
+contraseña mal en `PLATFORM_DATABASE_URL`, arranca, y pide `/health`:
+
+```bash
+curl http://localhost:3000/health
+```
+
+Esperado: `503` y `"basePlataforma":"credenciales-invalidas"`. **No** debe
+aparecer el host de Neon en la respuesta — ese detalle va solo al log del
+servidor.
+
+**La API no debe arrancar sin `FRONTEND_URL` en producción:**
+
+```powershell
+$env:NODE_ENV = "production"
+npm run start     # debe morir con un mensaje nombrando FRONTEND_URL
+$env:NODE_ENV = "development"
+```
+
+Es a propósito: sin esa variable, los correos de invitación salen apuntando a
+localhost y nadie puede entrar. Mejor caído y ruidoso que arriba y mintiendo.
+
+**Los tokens no deben quedar en los logs.** Abre cualquier enlace de
+invitación y mira la consola donde corre la API: la línea debe decir
+`GET /invitaciones/*** 200`, con el token enmascarado.
+
+**La guarda del seed mira la base destino, no `NODE_ENV`:**
+
+```bash
+npm run seed
+```
+
+Si tu `.env` apunta a Neon y no declaraste `SEED_HOST_PERMITIDO`, debe abortar
+diciendo qué host encontró y cómo autorizarlo. Ese es el caso real que
+protege: el `.env` apuntando a producción y tú corriendo el seed por costumbre.
+
+### 20.e — La escalada de privilegios, cerrada
+
+Vale la pena comprobar este a mano, porque es el más grave y el flujo completo
+se entiende mejor haciéndolo.
+
+1. Entra al frontend como **RRHH** (`rrhh@futuroars.demo`).
+2. Invita a `admin@plataforma.demo` —el correo del SUPERADMIN— a tu empresa.
+3. Copia el enlace de invitación que te muestra la pantalla y ábrelo.
+4. **Esperado:** la pantalla dice *"Confirma la invitación"* y pide **tu
+   contraseña actual**, no una nueva. Ahí ya se nota el cambio.
+5. Escribe una contraseña inventada y envía.
+   - **Esperado:** error — *"Ese correo ya tiene una cuenta. Escribe tu
+     contraseña actual"*. No entras.
+   - **Antes de este arreglo:** entrabas con la sesión del SUPERADMIN y, desde
+     ahí, cambiando de ámbito, tenías control de toda la plataforma.
+6. Ahora escribe la contraseña real (`admin123456`) y envía.
+   - **Esperado:** entra. El flujo legítimo sigue funcionando — el arreglo
+     cierra el ataque sin romper el caso normal.
+7. Limpia: revoca la invitación y quita esa membresía RRHH del administrador,
+   o vuelve a correr el seed.

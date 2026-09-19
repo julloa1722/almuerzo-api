@@ -45,49 +45,59 @@ function abortar(motivo, detalle) {
 }
 
 /**
- * La primera versión de esta guarda (Sprint 20) solo miraba `NODE_ENV`, y la
- * revisión de pre-vuelo encontró que no cubría el caso que ella misma
- * describía: el error realista no es teclear mal el comando, es tener el
- * `.env` apuntando a producción y correr `npm run seed` por costumbre — y en
- * esa máquina `NODE_ENV` sigue diciendo `development`. La guarda miraba el
- * entorno cuando el peligro está en el DESTINO.
+ * Decide si es seguro sembrar, mirando A QUÉ BASE apunta la conexión.
  *
- * Ahora mira las dos cosas, y la segunda es la que de verdad protege.
+ * Esta guarda se escribió tres veces. Vale la pena dejar por qué, porque las
+ * dos primeras parecían razonables:
+ *
+ * 1. **Mirando `NODE_ENV`.** La revisión de pre-vuelo encontró que no cubría
+ *    el caso que ella misma describía: el error realista no es teclear mal el
+ *    comando, es tener el `.env` apuntando a producción y correr
+ *    `npm run seed` por costumbre — y ahí `NODE_ENV` sigue diciendo
+ *    `development`. Miraba el entorno cuando el peligro está en el destino.
+ *
+ * 2. **Mirando el contenido: "aborta si hay usuarios que no son `.demo`".**
+ *    La idea era no obligar a configurar nada. Murió contra la realidad en la
+ *    primera prueba: la base de desarrollo de este proyecto contiene
+ *    `juan.ulloa@arsfuturo.com.do`, el correo real del usuario, que usó
+ *    probando la app. Una base de desarrollo **acumula correos reales de
+ *    forma natural**, así que la heurística daba falso positivo justo en el
+ *    caso que quería no molestar.
+ *
+ * La conclusión es que no hay forma fiable de distinguir desarrollo de
+ * producción por el contenido: cualquier heurística o estorba o no protege.
+ * Hay que declararlo una vez, explícitamente. Eso cuesta una línea en el
+ * `.env`, y el mensaje de error de abajo la da ya escrita para copiar.
  */
-function abortarSiEsProduccion() {
+function abortarSiNoEsBaseDeDesarrollo() {
   if (process.argv.includes('--forzar')) return;
 
   if (process.env.NODE_ENV === 'production') {
     abortar('NODE_ENV=production.');
   }
 
-  const url = process.env.MIGRATE_DATABASE_URL || '';
   let host = '';
   try {
-    host = new URL(url).hostname;
+    host = new URL(process.env.MIGRATE_DATABASE_URL || '').hostname;
   } catch {
-    // Si ni siquiera parsea, que falle más adelante con su propio mensaje.
+    // Si la URL ni siquiera parsea, que falle más adelante con su propio
+    // mensaje, que será más claro que cualquier cosa que digamos aquí.
     return;
   }
 
-  const esLocal = host === 'localhost' || host === '127.0.0.1';
-  // Escotilla para quien tenga varias ramas de desarrollo: el host permitido
-  // se declara explícitamente y se acabó la adivinanza.
-  const permitido = (process.env.SEED_HOST_PERMITIDO || '').trim();
-
-  if (esLocal) return;
-  if (permitido && host === permitido) return;
+  if (host === 'localhost' || host === '127.0.0.1') return;
+  if (host && host === (process.env.SEED_HOST_PERMITIDO || '').trim()) return;
 
   abortar(
     `la base destino no es local (${host}).`,
-    'Si ese ES tu host de desarrollo, declaralo una vez en tu .env:\n' +
-      `  SEED_HOST_PERMITIDO=${host}\n` +
+    'Si ese ES tu host de desarrollo, agrega esta línea a tu .env:\n\n' +
+      `  SEED_HOST_PERMITIDO=${host}\n\n` +
       'y este aviso no vuelve a salir.',
   );
 }
 
 async function main() {
-  abortarSiEsProduccion();
+  abortarSiNoEsBaseDeDesarrollo();
 
   // Sembrar inserta filas en `colaborador`, que tiene FORCE ROW LEVEL SECURITY.
   // Con el rol de la app (sin BYPASSRLS) cada insert necesitaría el GUC

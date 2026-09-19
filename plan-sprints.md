@@ -35,9 +35,25 @@ vista, no para resolverlos ya.
   de borrado, y sin documentación de qué se recolecta ni por qué. `CLAUDE.md`
   dice "sin restricciones regulatorias de salud" — pero protección de datos
   personales es una regulación distinta, y esta sí aplicaría con datos reales.
-- **Control de versiones real (git).** Ya rastreado — ver Sprint 9,
+- ~~**Control de versiones real (git).**~~ **✅ Resuelto el 16 de
+  septiembre de 2026** — git sí se pudo instalar (MinGit 2.55) y el
+  proyecto está en `https://github.com/julloa1722/almuerzo-api`.
+  `versiones/` queda como archivo histórico. Texto original: ver Sprint 9,
   bloqueado en esta máquina, sustituido por `CHANGELOG.md` + `versiones/`.
-- **Despliegue real.** Ya rastreado — Sprint 9.4, bloqueado por lo mismo.
+- **Despliegue real.** Desbloqueado el 16 de septiembre de 2026 al existir
+  git. Desglosado como **Sprint 20** al final de este documento (reemplaza
+  y amplía al 9.4, que solo contemplaba la API y no el frontend).
+  Documentado el 18 de septiembre de 2026, todavía sin construir.
+- **Contraseñas de los roles de base, publicadas en GitHub.** Agregado el
+  18 de septiembre de 2026, al preparar el Sprint 20.
+  `migrations/0003_rls.sql:24` y
+  `migrations/0004_contratos_y_rol_plataforma.sql:37` crean `almuerzo_app`
+  y `almuerzo_platform` con contraseñas literales (`almuerzo_app_dev`,
+  `almuerzo_platform_dev`), y el segundo tiene `BYPASSRLS` — o sea acceso
+  a todos los tenants saltándose el aislamiento. Lo contiene por ahora que
+  el host de Neon vive solo en el `.env`, fuera del repositorio. **El
+  usuario decidió explícitamente dejarlo para después**; se rota con un
+  `ALTER ROLE`, documentado como paso opcional en la guía de despliegue.
 - ~~**Sin CRUD de `programa_beneficio`.**~~ **✅ Resuelto en el Sprint 12**
   (4 de agosto de 2026) — `src/nomina/programas.controller.ts`. Se deja
   tachado en vez de borrado, para que quede constancia de que este gap se
@@ -68,7 +84,7 @@ vista, no para resolverlos ya.
 | 6 | Nómina y libro mayor | Ciclos, movimientos append-only, archivo de descuento configurable, cierre | `mockup-plataforma-almuerzo.html` (RRHH) — ✅ confirmado |
 | 7 | Liquidación a suplidores | Cálculo de liquidación, modelo agente/intermediario, pago por lotes | `mockup-plataforma-almuerzo.html` (suplidor · liquidación) — ✅ confirmado |
 | 8 | Sistema de ayuda y recorrido guiado | Solo el backend (API de contenido); tour visual y centro de ayuda diferidos hasta que exista un frontend | — (✅ confirmado) |
-| 9 | Operación y lanzamiento | Reportes, notificaciones por email, observabilidad/endurecimiento básico, despliegue real a Render | — (✅ subsprints 9.1–9.3 confirmados; 9.4 (despliegue real) pendiente — bloqueado por falta de git) |
+| 9 | Operación y lanzamiento | Reportes, notificaciones por email, observabilidad/endurecimiento básico, despliegue real a Render | — (✅ subsprints 9.1–9.3 confirmados; el 9.4 se reemplaza por el Sprint 20, que además cubre el frontend) |
 | 10 | Frontend — app del colaborador | Primer cliente real: React + TS + Vite sobre la API ya construida, empezando por el rol colaborador | `mockup-plataforma-almuerzo.html` (vista colaborador) — ✅ confirmado (31 de julio de 2026, probado en navegador por el usuario) |
 | 11 | Frontend — portal del suplidor | Catálogo, plantilla semanal, calendario/publicación, y preparación/entrega de pedidos (hoy solo por curl) | `portal-suplidor-menu.html` — ✅ confirmado (3 de agosto de 2026) |
 | 12 | Frontend — panel de RRHH | Disputas, ciclos y libro mayor, archivo de descuento, y CRUD de `programa_beneficio`/asignación (gap real cerrado aquí) | `mockup-plataforma-almuerzo.html` (pestaña `vRRHH`) — ✅ confirmado (4 de agosto de 2026) |
@@ -79,6 +95,7 @@ vista, no para resolverlos ya.
 | 17 | Relación comercial suplidor-empresa | Suplidor solicita vinculación con una empresa existente (queda `PENDIENTE` hasta aprobación), y registra leads de empresas que no están en la plataforma | — (sin mockup, decisiones de negocio nuevas del 5 de agosto de 2026) — ✅ confirmado (6 de agosto de 2026) |
 | 18 | Invitación de usuarios | Cierra el gap real de crear `membresia` — back office invita RRHH/suplidores, RRHH invita colaboradores ya cargados sin login | — (sin mockup, gap confirmado al construir el Sprint 15) — ✅ confirmado (6 de agosto de 2026) |
 | 19 | Recuperación de contraseña y resumen por rol | La otra mitad del gap del Sprint 18, más una pestaña "Resumen" para RRHH y suplidor, y una sección de resumen para el colaborador | — (sin mockup, pedido del usuario el 6 de agosto de 2026) — construido, pendiente de confirmación |
+| **20** | **Despliegue real** | La plataforma completa (API + frontend + base) corriendo en internet, accesible desde cualquier dispositivo, sin depender de la máquina del usuario. Reemplaza y amplía al subsprint 9.4 | — (sin mockup; desbloqueado al existir git el 16 de septiembre de 2026) — **documentado el 18 de septiembre de 2026, sin construir** |
 
 El orden respeta la dependencia real: no tiene sentido construir pedidos (sprint 4) antes de tener empresas y colaboradores reales (sprint 2), ni nómina (sprint 6) antes de tener pedidos que generen movimientos.
 
@@ -2832,3 +2849,218 @@ sprints de frontend documentados quedan todos confirmados. Lo que sigue
 sin construir está anotado en "Gaps identificados" al inicio de este
 documento — no se construye nada de ahí sin que alguien lo pida
 primero, mismo criterio de siempre.
+
+---
+
+## Sprint 20 — Despliegue real: la plataforma corriendo fuera de esta máquina
+
+**Estado: documentado el 18 de septiembre de 2026, no construido todavía.**
+Este desglose se escribe antes de tocar código, como manda la regla 1 de
+`CLAUDE.md`.
+
+**Objetivo:** que la plataforma completa — API, frontend y base — corra en
+internet, accesible desde cualquier dispositivo, sin depender de que la
+máquina del usuario esté encendida. Hoy todo vive en `localhost`: la API en
+el 3000, el frontend en el 5176, y la base en una rama dev de Neon.
+
+**Por qué ahora:** el subsprint 9.4 quedó preparado pero nunca ejecutado
+porque no había git en esta máquina. Eso se resolvió el 16 de septiembre de
+2026 — el proyecto está en `https://github.com/julloa1722/almuerzo-api`, que
+es justo lo que Render necesita para desplegar. Este sprint **reemplaza y
+amplía** al 9.4: aquel solo contemplaba la API, y desde entonces existen 9
+sprints de frontend que también tienen que quedar accesibles.
+
+### Decisiones tomadas antes de construir (pedidas al usuario, 18 de septiembre de 2026)
+
+1. **El frontend va como static site en el mismo blueprint de Render**, no
+   en Vercel/Netlify ni servido por la propia API. Razón: un solo panel, y
+   Render permite enlazar la URL de un servicio a la variable de otro, así
+   que `CORS_ORIGENES` y `VITE_API_URL` se resuelven sin copiar dominios a
+   mano entre dos cuentas.
+2. **Las migraciones corren automáticas en el `startCommand`**
+   (`npm run migrate && npm run start`), no a mano desde la máquina del
+   usuario. Razón: no depende de acordarse, y si una migración falla el
+   servicio no arranca — que es el comportamiento correcto. En el plan
+   gratuito hay una sola instancia, así que no hay carrera entre réplicas.
+3. **La rotación de las contraseñas de base queda diferida a propósito.**
+   El usuario decidió verlo después. Se anota como gap consciente al final
+   de este sprint y en "Gaps identificados", no se construye en silencio.
+
+### Diagnóstico previo (verificado contra el código, no supuesto)
+
+Lo que hoy **impide** desplegar:
+
+- `render.yaml:16-17` declara `NODE_ENV=production`, y Render inyecta las
+  variables del servicio también durante el build. Con eso `npm ci` omite
+  devDependencies, `typescript` (`package.json:47`) no se instala, y
+  `npm run build` muere con `tsc: not found`. El deploy nunca arranca.
+- `CORS_ORIGENES` no está declarada en `render.yaml`, así que la API
+  quedaría aceptando solo `http://localhost:5176` (`src/main.ts:28`) y el
+  navegador bloquearía cada request del frontend desplegado.
+- `render.yaml` no define ningún servicio para el frontend.
+- Nada en el deploy corre las migraciones.
+- El frontend usa `BrowserRouter` (`frontend/src/App.tsx:19`) con rutas
+  profundas. Dos de ellas — `/invitacion/:token` y
+  `/restablecer-password/:token` — **llegan por correo**, así que sin una
+  regla de rewrite `/*  →  /index.html` el sistema de invitaciones y la
+  recuperación de contraseña se rompen en producción con un 404.
+- No existe forma de crear el primer `SUPERADMIN` de una base limpia salvo
+  `npm run seed`, que siembra la demo entera con contraseñas publicadas en
+  el README. El sistema de invitaciones del Sprint 18 no sirve para
+  arrancar: `invitaciones.controller.ts` exige estar ya autenticado. Huevo
+  y gallina.
+
+Lo que **rompería** una vez desplegado:
+
+- Ninguno de los dos pools (`src/db/db.module.ts:20` y `:33`) registra
+  `pool.on('error')`. Neon en plan gratuito autosuspende el compute y corta
+  conexiones ociosas; un `'error'` sin listener en un `EventEmitter` tumba
+  el proceso. Se vería como reinicios espontáneos sin request asociado.
+- Los pools corren con todos los defaults: sin `connectionTimeoutMillis`,
+  el primer request contra un Neon dormido se cuelga sin tope — incluido
+  `/health`, que es justo lo que Render consulta para decidir si el deploy
+  sirvió.
+- Sin `trust proxy`, `req.ip` devuelve la IP del balanceador de Render, así
+  que el rate limit de login (`auth.module.ts:26`, 5 por minuto) pasa a ser
+  global: cinco intentos fallidos de cualquiera dejan a toda la plataforma
+  en 429 durante un minuto.
+- No hay manejo de SIGTERM. Render lo manda en cada deploy y cada vez que
+  el servicio gratuito duerme o despierta; los requests en vuelo se cortan
+  a la mitad y los pools nunca cierran.
+- `package.json` no declara `engines`, así que Render elige la versión de
+  Node. Esta máquina corre v24.18.1 y `@types/node` está pineado en `^20`.
+
+Lo que ya estaba bien y no hay que tocar: `/health` existe de verdad y
+coincide con lo que declara `render.yaml`; el server escucha en todas las
+interfaces; el SSL contra Neon está correctamente resuelto por
+`sslmode=require`; el logging va a stdout; el migrador es idempotente y
+corre de cero contra una base vacía; y los dos builds (`npm run build` en
+la raíz y en `frontend/`) compilan limpios.
+
+### Subsprint 20.1 — Desbloquear el build
+
+- Cambiar el `buildCommand` para que las devDependencies sí se instalen,
+  sin alterar el `NODE_ENV` del runtime.
+- Agregar `"engines"` a `package.json` fijando la major de Node, y alinear
+  `@types/node` con esa misma major.
+- **Criterio:** `NODE_ENV=production npm ci && npm run build` termina en 0
+  sobre un checkout limpio.
+
+### Subsprint 20.2 — Endurecer el runtime para un hosting real
+
+- `pool.on('error')` en ambos pools, con log — el cliente ya fue purgado
+  del pool, así que basta con no dejar morir el proceso.
+- Opciones explícitas de pool: `connectionTimeoutMillis`, `max` acotado
+  (son dos pools en un contenedor de 512 MB), `statement_timeout`.
+- `app.enableShutdownHooks()` y cierre de ambos pools al recibir SIGTERM.
+- `trust proxy` para que el rate limit vuelva a ser por IP real.
+- `/health` con `try/catch`, devolviendo 503 y el motivo cuando la base no
+  responde, en vez de un 500 genérico o un cuelgue indefinido. Chequear
+  también el pool de plataforma, para que una contraseña mal puesta en
+  `PLATFORM_DATABASE_URL` no dé un deploy "verde" que falla más tarde.
+- Quitar el `localhost` del log de arranque, que en Render es falso.
+- **Criterio:** la API arranca, `/health` responde, y matarla con SIGTERM
+  cierra limpio en vez de morir de golpe.
+
+### Subsprint 20.3 — Migraciones seguras en el arranque
+
+- `startCommand` pasa a `npm run migrate && npm run start`.
+- `pg_advisory_lock` en `scripts/migrate.js`: al correr en cada arranque,
+  se abre la ventana real de que un redeploy coincida con un arranque en
+  frío, o con el usuario corriéndolo a mano desde su máquina. Sin el lock,
+  el segundo proceso revienta contra la PK de `schema_migrations` y el
+  servicio no arranca.
+- Corregir el mensaje de `migrate down`, que hoy sugiere `docker compose` —
+  comando que este proyecto no usa por decisión de arquitectura.
+- **Consecuencia aceptada de la decisión 2:** como el migrador corre dentro
+  del contenedor, `MIGRATE_DATABASE_URL` (la credencial de `neondb_owner`,
+  con CREATEROLE y BYPASSRLS) tiene que vivir en el entorno del servicio
+  web. Se evaluó sacarla, pero con migraciones automáticas no hay forma de
+  evitarlo; queda documentado como el precio de esa decisión.
+- **Criterio:** un deploy desde cero aplica las 18 migraciones y arranca;
+  el segundo deploy no reaplica nada.
+
+### Subsprint 20.4 — Blueprint completo: API + frontend
+
+- `render.yaml` con dos servicios: el `web` de la API y un `static` para
+  `frontend/`.
+- Regla de rewrite `/* → /index.html` en el static site, sin la cual los
+  enlaces de invitación y de recuperación de contraseña que se mandan por
+  correo dan 404.
+- `CORS_ORIGENES` en la API y `VITE_API_URL` en el frontend, enlazadas
+  entre servicios para no copiar dominios a mano.
+- Quitar de `render.yaml` lo que estorba (`PORT` fijo).
+- **Criterio:** los dos servicios levantan desde un solo blueprint, y el
+  frontend desplegado llama a la API desplegada sin error de CORS.
+
+### Subsprint 20.5 — Arrancar una base de producción limpia
+
+- `scripts/crear-admin.js`: recibe email y contraseña, hace el `bcrypt.hash`
+  y escribe `usuario` + `membresia` de ámbito `PLATAFORMA`/`SUPERADMIN`, y
+  nada más — sin un solo dato demo. Reusa el `ON CONFLICT (usuario_id, rol)
+  WHERE ambito_tipo = 'PLATAFORMA'` de `seed.js:128`, para que correrlo dos
+  veces no duplique la membresía. A partir de ese usuario, el Sprint 18 ya
+  cubre todo lo demás: ese SUPERADMIN invita al resto.
+- Guarda en `scripts/seed.js` que aborte si apunta a una base de
+  producción, para que un error de tipeo en una variable de entorno no
+  siembre la demo con `admin123456` en internet.
+- **Criterio:** contra una base vacía, `migrate` + `crear-admin` alcanzan
+  para entrar a la plataforma por el frontend desplegado, sin datos demo.
+
+### Subsprint 20.6 — Documentación viva
+
+- Guía de despliegue paso a paso, reemplazando la sección actual del README
+  (que solo habla de la API, no menciona el frontend ni `CORS_ORIGENES`, y
+  da por manual algo que ahora es automático).
+- Tramo de despliegue en `PLAN-PRUEBAS.md`, como exige `EXPERTO.md`.
+- `CHANGELOG.md` y `CLAUDE.md` al día.
+- **Criterio:** el usuario puede seguir la guía de cero y llegar a una
+  plataforma funcionando, sin preguntar nada.
+
+### Criterio de cierre del sprint
+
+El usuario abre la URL pública del frontend **desde un dispositivo que no
+es esta computadora** (el teléfono sirve), entra con un usuario creado por
+`crear-admin.js` contra una base de producción limpia, y completa al menos
+un recorrido real: dar de alta una empresa, invitar a alguien, y que esa
+invitación llegue por correo y su enlace abra sin 404. Con la computadora
+del usuario apagada.
+
+### Fuera de alcance de este sprint (a propósito)
+
+- **Dominio propio y certificado.** Se usan los subdominios que da Render
+  (`*.onrender.com`), que ya vienen con HTTPS. Comprar un dominio es una
+  decisión de negocio, no técnica.
+- **Evitar el spin-down del plan gratuito.** Render duerme los servicios web
+  tras ~15 minutos sin tráfico, y el primer request después tarda unos 50
+  segundos. Es molesto pero no rompe nada, y evitarlo cuesta dinero (plan de
+  pago) o exige un cron que haga ping — lo segundo contradice la decisión de
+  "ningún job en segundo plano" del proyecto. Se documenta, no se resuelve.
+- **Verificación de checksum en el migrador.** `scripts/migrate.js:58`
+  calcula un sha256 y lo guarda, pero nadie lo lee jamás — editar una
+  migración ya aplicada no dispara ninguna alarma. Con producción encima eso
+  sí importa, pero es un sprint aparte, no un requisito para desplegar.
+- **CI/CD con tests antes de cada deploy.** Render puede desplegar en cada
+  push; correr la suite antes es una mejora futura.
+- **Respaldos.** El PITR y el branching de Neon cubren esto; no se construye
+  nada propio.
+
+### Gap consciente, decidido por el usuario: credenciales de base publicadas
+
+`migrations/0003_rls.sql:24` y `migrations/0004_contratos_y_rol_plataforma.sql:37`
+crean los roles con contraseñas literales — `almuerzo_app_dev` y
+`almuerzo_platform_dev` — y esas dos migraciones están ahora en GitHub. El
+segundo rol tiene `BYPASSRLS`: lee y escribe todas las empresas y suplidores
+saltándose el aislamiento entero que sostiene el diseño.
+
+Lo que hoy contiene el daño es que el host de Neon vive solo en el `.env`,
+que sí quedó fuera del repositorio — la contraseña sola no basta para
+entrar. Pero es medio secreto publicado, y la base de producción de este
+sprint nacería con esas mismas contraseñas, porque las crea la propia
+migración.
+
+**El usuario decidió el 18 de septiembre de 2026 dejarlo para después.** Se
+respeta. La guía de despliegue del subsprint 20.6 incluye el `ALTER ROLE`
+como paso claramente marcado, para que rotarlas sea cuestión de dos minutos
+cuando quiera hacerlo. Anotado también en "Gaps identificados" al inicio de
+este documento.

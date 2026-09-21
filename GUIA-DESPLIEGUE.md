@@ -60,8 +60,36 @@ aislamiento del proyecto, no un capricho:
 | `DATABASE_URL` | `almuerzo_app` | La app. **Sin** BYPASSRLS — el aislamiento entre empresas depende de esto |
 | `PLATFORM_DATABASE_URL` | `almuerzo_platform` | Back office. Con BYPASSRLS a propósito |
 
+**Esto no se configura en ninguna pantalla.** Son tres líneas de texto que
+escribes en un bloc de notas; se pegan en Render, en el paso 4. Neon solo te
+da la primera.
+
+**Y los roles `almuerzo_app` y `almuerzo_platform` todavía no existen** — los
+crean las migraciones `0003` y `0004` en el primer deploy. Si pruebas a
+conectarte con ellos ahora, falla, y está bien. Por eso el `startCommand` corre
+primero `npm run migrate` (con `neondb_owner`) y solo después arranca la app.
+
+> ### Usa el host directo, no el `-pooler`
+>
+> Neon ofrece dos variantes del mismo host:
+>
+> ```
+> ep-algo-123456.us-east-2.aws.neon.tech           ← esta
+> ep-algo-123456-pooler.us-east-2.aws.neon.tech    ← esta no
+> ```
+>
+> La versión `-pooler` pasa por PgBouncer en modo transacción, donde
+> **`pg_advisory_lock` no funciona de forma fiable**: es un lock de sesión, y
+> PgBouncer no garantiza que dos consultas seguidas viajen por la misma. El
+> migrador toma ese lock en cada arranque (`scripts/migrate.js`), así que con
+> el host agrupado la protección contra migraciones simultáneas deja de servir.
+>
+> Si en el panel de Neon ves un interruptor *Connection pooling*, apágalo antes
+> de copiar la cadena. Las tres variables deben usar el mismo host directo.
+
 La primera es la que copiaste de Neon, tal cual. Las otras dos son la misma
-cadena cambiando **solo usuario y contraseña**:
+cadena cambiando **solo usuario y contraseña** — todo lo que va del `@` en
+adelante es idéntico en las tres:
 
 ```
 MIGRATE_DATABASE_URL=postgres://neondb_owner:XXXX@ep-algo.neon.tech/neondb?sslmode=require

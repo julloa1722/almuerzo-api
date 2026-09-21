@@ -1,9 +1,9 @@
 # CHANGELOG
 
-## La plataforma está en internet (21 de septiembre de 2026)
+## La plataforma está en internet — Sprint 20 ✅ CONFIRMADO (21 de septiembre de 2026)
 
-**Desplegada y funcionando.** Primera vez que el sistema corre fuera de la
-máquina del usuario, tres años de sprints después de empezar.
+**Desplegada, funcionando, y probada por el usuario desde su teléfono.**
+Primera vez que el sistema corre fuera de su máquina.
 
 - API: `https://almuerzo-api.onrender.com` — `/health` responde
   `{"estado":"ok","baseDeDatos":"conectada","basePlataforma":"conectada","latenciaMs":58}`
@@ -45,10 +45,26 @@ producción, y se crea una rama nueva de Neon para desarrollo, apuntando el
 `.env` local ahí. Se mueve el entorno de desarrollo, que no tiene nada que
 perder, en vez de los datos validados.
 
-**Pendiente del criterio de cierre del Sprint 20:** falta el recorrido desde un
-dispositivo distinto con la computadora apagada, y probar el enlace de
-invitación por correo (sin Resend configurado, el enlace se copia de la
-pantalla). El sprint queda construido y desplegado, no confirmado.
+**El correo también quedó funcionando el mismo día.** Se configuró Resend
+(plan gratuito) desde las variables de entorno de Render, y la tabla
+`notificacion_enviada` registró la primera fila `ENVIADA` tras 32 `OMITIDA`
+acumuladas desde agosto. Limitación vigente: sin dominio verificado, Resend
+solo entrega a la dirección con la que se registró la cuenta; para escribirle
+a terceros hace falta verificar un dominio propio (SPF/DKIM). Mientras tanto,
+el enlace de invitación se copia de la pantalla, que es donde la app ya lo
+muestra.
+
+**Criterio de cierre cumplido.** El usuario abrió la plataforma desde su
+teléfono y el enlace de invitación que le llegó por correo cargó
+correctamente — esto último era el último riesgo técnico real del sprint,
+porque `/invitacion/:token` no existe como archivo en disco y sin la regla de
+rewrite del sitio estático habría dado 404, dejando el sistema de invitaciones
+inservible en producción.
+
+Dos desviaciones conscientes respecto al criterio escrito originalmente: se
+desplegó contra la base de desarrollo (no una de producción limpia) y no se usó
+`crear-admin.js` (la base ya tenía los usuarios demo). Ambas decididas por el
+usuario y detalladas en `plan-sprints.md`, Sprint 20.
 
 ## Revisión de pre-vuelo del Sprint 20 — 3 bloqueantes y 8 problemas reales (19 de septiembre de 2026)
 

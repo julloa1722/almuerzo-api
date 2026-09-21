@@ -95,7 +95,7 @@ vista, no para resolverlos ya.
 | 17 | Relación comercial suplidor-empresa | Suplidor solicita vinculación con una empresa existente (queda `PENDIENTE` hasta aprobación), y registra leads de empresas que no están en la plataforma | — (sin mockup, decisiones de negocio nuevas del 5 de agosto de 2026) — ✅ confirmado (6 de agosto de 2026) |
 | 18 | Invitación de usuarios | Cierra el gap real de crear `membresia` — back office invita RRHH/suplidores, RRHH invita colaboradores ya cargados sin login | — (sin mockup, gap confirmado al construir el Sprint 15) — ✅ confirmado (6 de agosto de 2026) |
 | 19 | Recuperación de contraseña y resumen por rol | La otra mitad del gap del Sprint 18, más una pestaña "Resumen" para RRHH y suplidor, y una sección de resumen para el colaborador | — (sin mockup, pedido del usuario el 6 de agosto de 2026) — construido, pendiente de confirmación |
-| **20** | **Despliegue real** | La plataforma completa (API + frontend + base) corriendo en internet, accesible desde cualquier dispositivo, sin depender de la máquina del usuario. Reemplaza y amplía al subsprint 9.4 | — (sin mockup; desbloqueado al existir git el 16 de septiembre de 2026) — **documentado el 18 de septiembre de 2026, sin construir** |
+| **20** | **Despliegue real** | La plataforma completa (API + frontend + base) corriendo en internet, accesible desde cualquier dispositivo, sin depender de la máquina del usuario. Reemplaza y amplía al subsprint 9.4 | — (sin mockup) — **✅ confirmado el 21 de septiembre de 2026, probado por el usuario desde su teléfono.** `almuerzo-api.onrender.com` / `almuerzo-front.onrender.com` |
 
 El orden respeta la dependencia real: no tiene sentido construir pedidos (sprint 4) antes de tener empresas y colaboradores reales (sprint 2), ni nómina (sprint 6) antes de tener pedidos que generen movimientos.
 
@@ -2852,11 +2852,51 @@ primero, mismo criterio de siempre.
 
 ---
 
-## Sprint 20 — Despliegue real: la plataforma corriendo fuera de esta máquina
+## Sprint 20 — Despliegue real: la plataforma corriendo fuera de esta máquina ✅ CONFIRMADO
 
-**Estado: documentado el 18 de septiembre de 2026, no construido todavía.**
-Este desglose se escribe antes de tocar código, como manda la regla 1 de
-`CLAUDE.md`.
+**Estado: cerrado y verificado el 21 de septiembre de 2026.** Construido,
+desplegado, y probado por el usuario **desde su teléfono** — que era el
+criterio real de este sprint.
+
+```
+API       https://almuerzo-api.onrender.com
+Frontend  https://almuerzo-front.onrender.com
+```
+
+Lo que el usuario verificó con sus propias manos:
+
+- `/health` responde `estado: ok` con **las dos** bases conectadas — o sea que
+  `DATABASE_URL` y `PLATFORM_DATABASE_URL` están bien puestas, cada una con su
+  rol.
+- Entra a la plataforma desde el **teléfono**, sin depender de su computadora.
+- El correo sale de verdad: primera fila `ENVIADA` en `notificacion_enviada`
+  tras 32 `OMITIDA` acumuladas desde agosto.
+- **El enlace de invitación abre y pide definir contraseña.** Este era el
+  último riesgo técnico del sprint: `/invitacion/:token` no existe como archivo
+  en disco, así que sin la regla de rewrite del sitio estático habría dado 404
+  y el sistema de invitaciones quedaba inservible en producción. Funciona.
+
+**Dos desviaciones conscientes respecto al criterio de cierre original**, ambas
+decididas por el usuario y registradas para no fingir que se cumplió al pie de
+la letra:
+
+1. **Apunta a la base de DESARROLLO, no a una de producción limpia.** El
+   objetivo inmediato era enseñarle la plataforma a un cliente, y con los datos
+   demo cargados (Futuro ARS, Cocina Criolla, menús, pedidos) se ve un sistema
+   vivo en vez de pantallas vacías. Se saltaron los pasos 1 y 2 de la guía.
+2. **No se usó `crear-admin.js`** — no hacía falta, la base ya tenía los
+   usuarios demo. El script existe, está probado, y es lo que se usará cuando
+   se monte la base de producción real.
+
+Consecuencias asumidas mientras dure esta etapa, anotadas en `CLAUDE.md` para
+quien trabaje aquí: `npm run seed` y las suites de tests escriben sobre lo que
+el cliente está viendo, y las cuatro cuentas demo con contraseñas publicadas en
+el README son alcanzables desde internet.
+
+**El paso a producción no requerirá migrar datos.** Cuando el cliente valide,
+la base que ya está en internet se queda como producción y se crea una rama
+nueva de Neon para desarrollo, apuntando el `.env` local ahí. Se mueve el
+entorno que no tiene nada que perder, en vez de los datos validados.
 
 **Objetivo:** que la plataforma completa — API, frontend y base — corra en
 internet, accesible desde cualquier dispositivo, sin depender de que la

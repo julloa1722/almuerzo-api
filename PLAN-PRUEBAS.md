@@ -847,10 +847,18 @@ alcance" del Sprint 14 en `plan-sprints.md`.
 
 ---
 
-## 20. Sprint 20 — Despliegue real (API + frontend + base en internet)
+## 20. Sprint 20 — Despliegue real (API + frontend + base en internet) ✅ confirmado el 21 de septiembre de 2026
 
-**Estado: construido y probado localmente el 18 de septiembre de 2026.
-Pendiente de que lo ejecutes en Render.**
+**Desplegado y probado por el usuario desde su teléfono.**
+
+```
+API       https://almuerzo-api.onrender.com
+Frontend  https://almuerzo-front.onrender.com
+```
+
+Verificado en vivo: `/health` con las dos bases conectadas, entrada desde el
+teléfono, correo saliendo de verdad (Resend), y el enlace de invitación
+abriendo sin 404 — que era la prueba de la regla de rewrite.
 
 Este tramo es distinto a todos los anteriores: no se corre contra
 `localhost`, y su criterio de éxito es que funcione **con tu computadora

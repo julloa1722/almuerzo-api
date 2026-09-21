@@ -138,9 +138,15 @@ Implicaciones que hay que tener presentes al trabajar aquí:
 - Cuando se pase a producción de verdad: **no se migra nada**. La base actual
   se queda como producción y se crea una rama nueva de Neon para desarrollo.
 
-El **Sprint 20 (despliegue real) está construido y desplegado, pendiente de
-confirmación**: falta el recorrido desde otro dispositivo con la computadora
-apagada y la prueba del enlace de invitación.
+El correo **sí funciona**: Resend configurado desde las variables de Render.
+Limitación vigente — sin dominio verificado, solo entrega a la dirección con la
+que se registró la cuenta de Resend. Para escribirle a terceros hace falta
+verificar un dominio propio.
+
+El **Sprint 20 (despliegue real) está ✅ CONFIRMADO** (21 de septiembre de
+2026) — el usuario entró desde su teléfono y abrió un enlace de invitación
+recibido por correo, que es lo que valida la regla de rewrite del sitio
+estático. Ver `plan-sprints.md`, Sprint 20.
 Incluye: `render.yaml` con dos servicios (API + sitio estático con rewrite
 SPA, sin el cual los enlaces de invitación y de recuperación de contraseña
 dan 404), migraciones automáticas en el `startCommand` con advisory lock,

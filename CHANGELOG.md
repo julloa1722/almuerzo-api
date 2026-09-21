@@ -1,5 +1,55 @@
 # CHANGELOG
 
+## La plataforma está en internet (21 de septiembre de 2026)
+
+**Desplegada y funcionando.** Primera vez que el sistema corre fuera de la
+máquina del usuario, tres años de sprints después de empezar.
+
+- API: `https://almuerzo-api.onrender.com` — `/health` responde
+  `{"estado":"ok","baseDeDatos":"conectada","basePlataforma":"conectada","latenciaMs":58}`
+- Frontend: `https://almuerzo-front.onrender.com`
+- Base: la rama de Neon de siempre (ver más abajo — decisión consciente)
+
+Blueprint `almuerzo` en Render (`exs-daole980cd8s73e88uj0`), los dos servicios
+creados desde `render.yaml` sin intervención manual, deploy de la API en 36,7
+segundos, commit `ab28ca6`.
+
+**Los dominios salieron limpios**, sin sufijo. Eso valida la decisión de
+rellenar `CORS_ORIGENES`, `FRONTEND_URL` y `VITE_API_URL` a ciegas con los
+nombres previstos en vez de dejarlas vacías: se acertó, la API arrancó al
+primer intento y el paso 5b (conectar los servicios a mano) resultó
+innecesario. La guía se corrigió para recomendar eso por defecto.
+
+**Decisión del usuario: este despliegue apunta a la base de DESARROLLO, no a
+una de producción limpia.** El objetivo es que un cliente pruebe la plataforma
+ya, con los datos de demo cargados (Futuro ARS, Cocina Criolla, menús, pedidos)
+en vez de pantallas vacías. Se saltaron los pasos 1 y 2 de la guía. Producción
+real vendrá después, con su propia base.
+
+Consecuencias aceptadas explícitamente por el usuario, anotadas para que nadie
+las descubra por sorpresa:
+
+- Las cuatro cuentas demo tienen contraseñas publicadas en el README, y
+  `admin@plataforma.demo` es SUPERADMIN con `BYPASSRLS` sobre todos los
+  tenants. La URL es pública.
+- Correr `npm run seed` o las suites de tests desde la máquina local ahora
+  escribe sobre lo que el cliente está viendo. La guarda de `seed.js` protege
+  mientras `SEED_HOST_PERMITIDO` no esté declarada en el `.env` — conviene
+  dejarla sin declarar durante la prueba.
+- Lo que el cliente cargue son datos reales de personas reales, aunque el
+  ambiente se llame demo.
+
+**El cambio a producción será más simple de lo que parece:** no hay que migrar
+nada. Cuando el cliente valide, la base que ya está en internet se queda como
+producción, y se crea una rama nueva de Neon para desarrollo, apuntando el
+`.env` local ahí. Se mueve el entorno de desarrollo, que no tiene nada que
+perder, en vez de los datos validados.
+
+**Pendiente del criterio de cierre del Sprint 20:** falta el recorrido desde un
+dispositivo distinto con la computadora apagada, y probar el enlace de
+invitación por correo (sin Resend configurado, el enlace se copia de la
+pantalla). El sprint queda construido y desplegado, no confirmado.
+
 ## Revisión de pre-vuelo del Sprint 20 — 3 bloqueantes y 8 problemas reales (19 de septiembre de 2026)
 
 Con el Sprint 20 ya construido y publicado en GitHub, antes de crear el

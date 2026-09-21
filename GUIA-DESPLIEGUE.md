@@ -141,30 +141,53 @@ PLATFORM_DATABASE_URL=postgres://almuerzo_platform:almuerzo_platform_dev@ep-algo
 
 ## Paso 4 — Cargar las credenciales
 
-Render te va a pedir las variables marcadas como secretas. Son estas cinco,
-todas en el servicio `almuerzo-api`:
+Render te muestra un formulario con las ocho variables del blueprint. Llénalo
+así — **incluidas las tres de dominio**, aunque Render todavía no te los haya
+asignado:
+
+**Servicio `almuerzo-api`:**
 
 | Variable | Qué pegar |
 |---|---|
-| `MIGRATE_DATABASE_URL` | La cadena de `neondb_owner` del paso 2 |
-| `DATABASE_URL` | La de `almuerzo_app` |
-| `PLATFORM_DATABASE_URL` | La de `almuerzo_platform` |
-| `RESEND_API_KEY` | Tu API key de [resend.com](https://resend.com), o déjala vacía |
-| `RESEND_FROM_EMAIL` | El remitente verificado en Resend, o vacío |
+| `DATABASE_URL` | La de **`almuerzo_app`** |
+| `MIGRATE_DATABASE_URL` | La de **`neondb_owner`** |
+| `PLATFORM_DATABASE_URL` | La de **`almuerzo_platform`** |
+| `CORS_ORIGENES` | `https://almuerzo-front.onrender.com` |
+| `FRONTEND_URL` | `https://almuerzo-front.onrender.com` |
+| `RESEND_API_KEY` | *(déjala en blanco)* |
+| `RESEND_FROM_EMAIL` | *(déjala en blanco)* |
 
-Hay tres más — `CORS_ORIGENES`, `FRONTEND_URL` y `VITE_API_URL` — que **no
-puedes llenar todavía**, porque necesitan los dominios que Render asigna al
-crear los servicios. Déjalas vacías por ahora; el paso 5b las completa.
+**Servicio `almuerzo-front`:**
+
+| Variable | Qué pegar |
+|---|---|
+| `VITE_API_URL` | `https://almuerzo-api.onrender.com` |
+
+> ### ⚠️ Revisa que `DATABASE_URL` no lleve `neondb_owner`
+>
+> Render lista `DATABASE_URL` **antes** que `MIGRATE_DATABASE_URL`, al revés
+> de como están en el `.env`, y las cadenas se parecen mucho. Si las cruzas,
+> la aplicación arranca y todo *parece* funcionar — pero `neondb_owner` tiene
+> `BYPASSRLS`, así que **el aislamiento entre empresas deja de existir**: RRHH
+> de una empresa vería los datos de todas las demás. No da ningún error.
+
+**Por qué se rellenan los dominios a ciegas.** Render asigna
+`<nombre-del-servicio>.onrender.com` si ese nombre está libre globalmente. Como
+`almuerzo-api` y `almuerzo-front` son poco comunes, lo normal es acertar — y
+entonces todo funciona al primer deploy y el paso 5b sobra. Si el nombre
+estuviera ocupado, Render le agrega un sufijo y lo corriges en 5b, que es
+exactamente donde estarías si las hubieras dejado vacías. No se pierde nada
+por intentarlo.
 
 **No** tienes que configurar `JWT_SECRET`: `render.yaml` le dice a Render que
 genere uno aleatorio y lo guarde.
 
-> **Por qué esas tres son manuales.** El blueprint puede enlazar un servicio
-> con otro, y eso se intentó — pero Render entrega ahí el hostname de la *red
-> privada*, no el dominio público de internet. Un navegador nunca manda ese
-> valor, así que CORS bloquearía todo, y un enlace de correo con ese host no
-> llevaría a ninguna parte. No hay forma de obtener el dominio público desde
-> el blueprint, así que este paso es manual por diseño de Render.
+> **Por qué estas tres no las resuelve el blueprint solo.** Se intentó
+> enlazarlas entre servicios con `fromService`, pero Render entrega ahí el
+> hostname de la *red privada*, no el dominio público de internet. Un navegador
+> nunca manda ese valor, así que CORS bloquearía todo, y un enlace de correo
+> con ese host no llevaría a ninguna parte. No hay forma de obtener el dominio
+> público desde el blueprint.
 
 > **Sin Resend** las notificaciones por correo quedan registradas como
 > `OMITIDA` y nada se rompe. Pero **las invitaciones y la recuperación de
@@ -177,13 +200,7 @@ Ahora sí: **Apply** / **Create**.
 
 Render construye los dos servicios. Tarda entre 5 y 10 minutos la primera vez.
 
-**El primer deploy de la API va a fallar al arrancar, y está bien.** Sin
-`FRONTEND_URL` la API se niega a levantar a propósito — es preferible a
-arrancar bien y mandar correos de invitación apuntando a `localhost`, que es
-un fallo que solo descubres cuando alguien no puede entrar. El paso 5b lo
-arregla.
-
-En los logs de `almuerzo-api` deberías ver **exactamente esto**, en este orden:
+En los logs de `almuerzo-api` deberías ver, en este orden:
 
 ```
 Tomando el lock de migraciones ...
@@ -191,30 +208,31 @@ Aplicando 0001_extensiones.sql ...
   OK: 0001_extensiones.sql
 ... (18 migraciones)
 18 migración(es) aplicada(s).
-No se puede arrancar: faltan variables de entorno obligatorias: FRONTEND_URL, CORS_ORIGENES.
+almuerzo-api escuchando en el puerto 10000
+CORS permitido para: https://almuerzo-front.onrender.com
 ```
 
-**Esa última línea es el éxito de este paso, no un fracaso.** Significa que las
-migraciones corrieron bien contra tu base de producción y que la API se detuvo
-donde debía. Render marcará el deploy en rojo; ignóralo por ahora.
-
-Lo que **no** vas a ver todavía son las líneas `almuerzo-api escuchando...` ni
-`CORS permitido para...`: la validación de entorno corre antes de levantar el
-servidor. Tampoco tiene sentido abrir `/health` aún — el servicio no está en
-línea, así que verías la página de error de Render.
-
-**Lo único que hay que verificar aquí son las 18 migraciones.** Si alguna
-falla, el resto no se aplica — y entonces el problema está en la base o en las
-cadenas de conexión, no en las variables que dejaste vacías.
+Si estás desplegando contra una base que **ya** tenía las migraciones
+aplicadas, la segunda línea será `Nada que aplicar — el esquema ya está al
+día.` en vez de la lista. También es correcto.
 
 Las migraciones corren solas en cada arranque, no tienes que hacer nada desde
-tu máquina.
+tu máquina. Si una falla, el servicio no arranca: es a propósito, mejor caído
+que sirviendo contra un esquema equivocado.
 
-El frontend, en cambio, ya debería estar publicado y accesible en su URL
-(aunque todavía no pueda hablar con la API — eso lo arregla el paso 5b).
+**Verifica el dominio.** En **Settings** del servicio, mira la URL real. Si es
+exactamente `https://almuerzo-api.onrender.com`, acertaste y **te puedes
+saltar el paso 5b entero**. Si trae un sufijo, ve al 5b.
 
-Terminado el paso 5b vas a volver aquí a comprobar la API. Cuando esté arriba,
-`https://almuerzo-api.onrender.com/health` debe responder:
+Abre `https://almuerzo-api.onrender.com` a secas y vas a ver esto:
+
+```json
+{"message":"Cannot GET /","error":"Not Found","statusCode":404}
+```
+
+**Eso es correcto, no es un fallo.** La API no tiene ninguna ruta en la raíz;
+ese 404 ya demuestra que el servidor está vivo y respondiendo. La prueba de
+verdad es `https://almuerzo-api.onrender.com/health`, que debe responder:
 
 ```json
 {"estado":"ok","baseDeDatos":"conectada","basePlataforma":"conectada","latenciaMs":123}
@@ -242,10 +260,15 @@ sigan publicadas en las migraciones, ese host es lo único que la protege.
 > la línea `Fallo al consultar la base "app"` o `"plataforma"`, que trae el
 > mensaje completo. La tabla de arriba sirve cuando el servicio sí está vivo.
 
-## Paso 5b — Conectar los dos servicios entre sí
+## Paso 5b — Solo si algún dominio salió con sufijo
 
-Ahora que Render ya asignó los dominios, ve a la pestaña **Settings** de cada
-servicio y cópialos. Se ven así:
+**Si en el paso 5 los dominios eran los limpios (`almuerzo-api.onrender.com` y
+`almuerzo-front.onrender.com`), salta directo al paso 6.** Ya está todo
+conectado.
+
+Este paso es para cuando Render tuvo que agregar un sufijo porque el nombre
+estaba ocupado. Ve a la pestaña **Settings** de cada servicio y copia los
+dominios reales. Se ven así:
 
 ```
 https://almuerzo-api.onrender.com

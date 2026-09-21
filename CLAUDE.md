@@ -116,8 +116,31 @@ y el centro de ayuda quedaron diferidos hasta que exista un frontend). El
 subsprint 9.4 (despliegue real a Render) quedó reemplazado por el **Sprint
 20**, que además cubre el frontend.
 
-El **Sprint 20 (despliegue real) está construido y probado localmente el 18
-de septiembre de 2026, pendiente de que el usuario lo ejecute en Render.**
+## 🌐 La plataforma está EN INTERNET (21 de septiembre de 2026)
+
+```
+API       https://almuerzo-api.onrender.com     (/health devuelve estado: ok)
+Frontend  https://almuerzo-front.onrender.com
+```
+
+Render, plan gratuito, blueprint `almuerzo` desde `render.yaml`. Se duerme tras
+~15 min sin tráfico; el primer request después tarda ~50s.
+
+**Apunta a la base de DESARROLLO, no a una de producción.** Decisión explícita
+del usuario: quería enseñársela a un cliente ya, con los datos demo cargados.
+Implicaciones que hay que tener presentes al trabajar aquí:
+
+- **`npm run seed` y las suites de tests escriben sobre lo que está en
+  internet.** La guarda de `seed.js` frena mientras `SEED_HOST_PERMITIDO` no
+  esté en el `.env` — no la declares sin avisarle al usuario.
+- Las cuatro cuentas demo, con contraseñas publicadas en el README, son
+  alcanzables desde internet. El usuario lo sabe y lo aceptó para esta etapa.
+- Cuando se pase a producción de verdad: **no se migra nada**. La base actual
+  se queda como producción y se crea una rama nueva de Neon para desarrollo.
+
+El **Sprint 20 (despliegue real) está construido y desplegado, pendiente de
+confirmación**: falta el recorrido desde otro dispositivo con la computadora
+apagada y la prueba del enlace de invitación.
 Incluye: `render.yaml` con dos servicios (API + sitio estático con rewrite
 SPA, sin el cual los enlaces de invitación y de recuperación de contraseña
 dan 404), migraciones automáticas en el `startCommand` con advisory lock,

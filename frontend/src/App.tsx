@@ -7,6 +7,7 @@ import { RolRouter } from './pages/RolRouter';
 import { AceptarInvitacionPage } from './pages/AceptarInvitacionPage';
 import { OlvidePasswordPage } from './pages/OlvidePasswordPage';
 import { RestablecerPasswordPage } from './pages/RestablecerPasswordPage';
+import { ContactoPage } from './pages/ContactoPage';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
@@ -19,6 +20,7 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/contacto" element={<ContactoPage />} />
             <Route path="/invitacion/:token" element={<AceptarInvitacionPage />} />
             <Route path="/olvide-password" element={<OlvidePasswordPage />} />
             <Route path="/restablecer-password/:token" element={<RestablecerPasswordPage />} />

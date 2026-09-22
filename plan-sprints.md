@@ -3359,3 +3359,115 @@ entra, y confirma. Con un usuario de varias membresías, la pantalla de elegir
   licenciarlas. La ilustración propia pesa menos y no envejece igual.
 - **El nombre del producto.** Sigue siendo "Almuerzo", de relleno. Es una
   decisión de negocio, no de diseño, y está anotada como pendiente.
+
+---
+
+## Sprint 22 — La puerta comercial: qué hace la plataforma y cómo te contactan
+
+**Estado: documentado el 22 de septiembre de 2026.**
+
+**Objetivo:** que alguien que llega a la plataforma **sin cuenta** entienda qué
+es, qué gana según sea empresa, suplidor o colaborador, y pueda escribirte sin
+tener que buscar un correo por ahí.
+
+**Por qué ahora:** hasta hoy el único destino público era el login. Quien no
+tiene usuario —justo el suplidor o la empresa que podrías firmar— ve dos campos
+y una puerta cerrada. No hay forma de que te contacte desde la plataforma.
+
+### Decisiones del usuario, tomadas antes de construir
+
+1. **El formulario vive en `/contacto`**, no bajando en el login. El login queda
+   limpio para los 200 colaboradores que entran todos los días; el enlace
+   comercial es discreto y solo lo sigue quien lo necesita.
+2. **"Mensajes de la plataforma" son los textos de qué hace y qué beneficios
+   da**, por tipo de cliente. No es una bandeja de avisos ni un buzón: es la
+   copia comercial. Se aclaró preguntando, porque la primera lectura fue otra.
+
+### Subsprint 22.1 — Tabla `solicitud_contacto`
+
+Migración nueva. Campos: nombre, email, teléfono, tipo (`SUPLIDOR` o
+`EMPRESA`), nombre del negocio, mensaje, estado (`NUEVA` / `ATENDIDA` /
+`DESCARTADA`), y fecha.
+
+**No se reusa `lead_comercial`** (Sprint 17) aunque se parezca: esa tabla exige
+`suplidor_id NOT NULL` porque modela "un suplidor propone una empresa que no
+está en la plataforma". Aquí el remitente es anónimo y puede ser de cualquiera
+de los dos lados. Forzarlo ahí obligaría a hacer nullable una llave que hoy
+sostiene su política de RLS, y a mezclar dos ciclos de vida distintos: un lead
+se *convierte* en empresa; una solicitud se *responde*.
+
+RLS activado y negado para el rol de aplicación: solo `almuerzo_platform` lee.
+La inserción pública va por el pool de plataforma, mismo patrón ya establecido
+en `InvitacionesService.aceptar` para escribir sin sesión.
+
+### Subsprint 22.2 — `POST /contacto`, público
+
+Sin JWT. Validación de campos y **dos defensas contra el spam**, porque un
+formulario público sin ellas se llena de basura en días:
+
+- `ThrottlerGuard` estricto por IP — más duro que el del login, porque nadie
+  legítimo manda cinco solicitudes por minuto.
+- Campo trampa (*honeypot*): un input oculto que una persona nunca llena y un
+  robot sí. Si viene con contenido se responde 201 igual, pero no se guarda —
+  que el robot crea que funcionó es mejor que enseñarle qué lo delató.
+
+### Subsprint 22.3 — Aviso por correo
+
+Reusa `enviarNotificacion()` con tipo `SOLICITUD_CONTACTO`, al correo de la
+plataforma. Encaja con la limitación vigente de Resend: sin dominio verificado
+solo entrega a la dirección de la cuenta, que aquí **es justo el destinatario
+correcto** — el dueño de la plataforma.
+
+Si el correo falla, la solicitud ya está guardada. El registro manda; el aviso
+es cortesía.
+
+### Subsprint 22.4 — Bandeja en back office
+
+Lista de solicitudes con su estado, y un botón para marcarlas atendidas o
+descartadas. Mínima a propósito: sin ella, el formulario sería un agujero negro
+y habría que entrar a la base con SQL para leer lo que la gente escribe.
+
+### Subsprint 22.5 — La página `/contacto`
+
+Pública, con el mismo marco del Sprint 21. Dos partes:
+
+**Qué hace la plataforma**, en una frase, y **qué gana cada uno** en tres
+bloques —empresa, suplidor, colaborador— con beneficios reales de lo que el
+sistema hace de verdad, no promesas de folleto:
+
+- *Empresa*: el descuento va a nómina solo; se decide cuánto aporta la empresa y
+  cuánto el colaborador; reportes de consumo y gasto.
+- *Suplidor*: los pedidos del día llegan ordenados, sin llamadas ni WhatsApp; el
+  menú se publica una vez y la plantilla semanal lo repite; el cobro va por
+  liquidación, no cliente por cliente.
+- *Colaborador*: se pide desde el teléfono en dos toques; se ve cuánto se lleva
+  consumido del ciclo; si no entregan, se disputa y se corrige.
+
+**El formulario**: nombre, correo, teléfono, si es suplidor o empresa, nombre
+del negocio y mensaje.
+
+### Subsprint 22.6 — Enlace desde el login
+
+Una línea discreta bajo el formulario de acceso: «¿Tu empresa o tu cocina
+quiere usar Almuerzo?». No compite con el botón de entrar.
+
+### Criterio de cierre
+
+El usuario abre `/contacto` desde el teléfono, envía una solicitud, **le llega
+el correo**, y la ve en la bandeja de back office. Manda una segunda enseguida y
+el rate limit la frena.
+
+### Fuera de alcance (a propósito)
+
+- **Página de inicio comercial completa.** Esto es una página de contacto con
+  contexto, no un sitio de marketing con testimonios, precios y blog.
+- **Responder desde la plataforma.** Se lee la solicitud y se contesta por
+  correo, a mano. Un hilo de conversación dentro de la app es otro sprint y
+  nadie lo ha pedido.
+- **Convertir una solicitud en empresa o suplidor automáticamente.** El wizard
+  de alta ya existe (Sprint 13) y se usa a mano; enlazarlos es una mejora
+  futura.
+- **CAPTCHA.** El rate limit y el honeypot cubren el volumen de spam realista de
+  una plataforma que nadie conoce todavía. Meter reCAPTCHA implica un servicio
+  externo y un banner de privacidad; se deja para cuando el spam sea un problema
+  real y medible, no antes.

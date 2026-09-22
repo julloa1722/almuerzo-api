@@ -88,6 +88,15 @@ export function LoginPage() {
               ¿Olvidaste tu contraseña?
             </Link>
           </form>
+
+          {/* Sprint 22: la puerta comercial. Discreta a propósito — compite con
+              nada, pero es el único camino que tiene alguien sin cuenta. */}
+          <p className="text-[12.5px] text-muted m-0 pt-3 border-t border-rule">
+            ¿Tu empresa o tu cocina quiere usar Almuerzo?{' '}
+            <Link to="/contacto" className="underline text-verde font-medium">
+              Escríbenos
+            </Link>
+          </p>
         </>
       ) : (
         <>

@@ -13,6 +13,7 @@ import { AyudaModule } from './ayuda/ayuda.module';
 import { ReportesModule } from './reportes/reportes.module';
 import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { InvitacionesModule } from './invitaciones/invitaciones.module';
+import { ContactoModule } from './contacto/contacto.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { InvitacionesModule } from './invitaciones/invitaciones.module';
     ReportesModule,
     NotificacionesModule,
     InvitacionesModule,
+    ContactoModule,
   ],
   controllers: [HealthController],
 })

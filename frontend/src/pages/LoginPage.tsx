@@ -3,6 +3,18 @@ import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { ApiError } from '../lib/api';
 import { Aviso } from '../components/Aviso';
+import { LayoutPublico } from '../components/LayoutPublico';
+import { CampoPassword } from '../components/CampoPassword';
+
+const ROL_ETIQUETA: Record<string, string> = {
+  SUPERADMIN: 'Administrador de plataforma',
+  SOPORTE: 'Soporte de plataforma',
+  ADMIN_EMPRESA: 'Administrador de empresa',
+  RRHH: 'RRHH',
+  COLABORADOR: 'Colaborador',
+  SUPLIDOR_ADMIN: 'Administrador de suplidor',
+  DESPACHO: 'Despacho',
+};
 
 export function LoginPage() {
   const { auth, loginPendiente, cargando, login, elegirAmbito } = useAuth();
@@ -32,54 +44,82 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <h2 className="mb-1">Almuerzo</h2>
-        <p className="text-muted text-[13.5px] mb-5">Pide tu almuerzo del día en un par de clics.</p>
+    <LayoutPublico>
+      {!loginPendiente ? (
+        <>
+          <h2 className="font-serif text-[23px] font-semibold tracking-[-0.01em] m-0">
+            Entrar
+          </h2>
 
-        <div className="card">
           {error && <Aviso tipo="no">{error}</Aviso>}
 
-          {!loginPendiente ? (
-            <form onSubmit={enviar}>
-              <div className="campo">
-                <label>Correo</label>
-                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div className="campo">
-                <label>Contraseña</label>
-                <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-              </div>
-              <button className="btn btn-ok w-full mt-1" type="submit" disabled={cargando}>
-                {cargando ? 'Entrando…' : 'Entrar'}
-              </button>
-              <Link to="/olvide-password" className="text-[12.5px] underline mt-3 inline-block">
-                ¿Olvidaste tu contraseña?
-              </Link>
-            </form>
-          ) : (
-            <div>
-              <h3>Elige con qué cuenta entrar</h3>
-              <div className="flex flex-col gap-1.5">
-                {loginPendiente.membresias.map((m) => (
-                  <button
-                    key={m.membresiaId}
-                    className="btn btn-sec text-left justify-between flex"
-                    disabled={cargando}
-                    onClick={() => seleccionar(m.membresiaId)}
-                  >
-                    <span>
-                      {m.nombre ?? 'Plataforma'}
-                      <br />
-                      <span className="text-[11px] opacity-70">{m.rol}</span>
-                    </span>
-                  </button>
-                ))}
+          <form onSubmit={enviar} className="flex flex-col gap-3.5">
+            <div className="campo">
+              <label htmlFor="correo">Correo</label>
+              <div className="entrada">
+                <input
+                  id="correo"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="tu@empresa.com"
+                  autoComplete="username"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  autoFocus
+                  required
+                />
               </div>
             </div>
-          )}
-        </div>
-      </div>
-    </div>
+
+            <CampoPassword
+              id="password"
+              etiqueta="Contraseña"
+              valor={password}
+              onChange={setPassword}
+            />
+
+            <button className="btn btn-ok w-full" type="submit" disabled={cargando}>
+              {cargando ? 'Entrando…' : 'Entrar'}
+            </button>
+
+            <Link to="/olvide-password" className="text-[12.5px] underline text-muted">
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </form>
+        </>
+      ) : (
+        <>
+          <h2 className="font-serif text-[23px] font-semibold tracking-[-0.01em] m-0">
+            Elige con qué cuenta entrar
+          </h2>
+          <p className="text-[13px] text-muted m-0 -mt-2">
+            Tu correo tiene acceso a más de un sitio.
+          </p>
+
+          {error && <Aviso tipo="no">{error}</Aviso>}
+
+          {/* Sprint 21: antes eran botones con un <br> dentro y el rol en gris
+              diminuto. Ahora la entidad manda y el rol va como insignia, que es
+              el orden en que la gente decide: primero dónde, después como qué. */}
+          <div className="flex flex-col gap-2">
+            {loginPendiente.membresias.map((m) => (
+              <button
+                key={m.membresiaId}
+                className="ambito"
+                disabled={cargando}
+                onClick={() => seleccionar(m.membresiaId)}
+              >
+                <span className="font-medium text-[14px]">{m.nombre ?? 'Plataforma'}</span>
+                <span className="est e-CONFIRMADO flex-none">
+                  {ROL_ETIQUETA[m.rol] ?? m.rol}
+                </span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </LayoutPublico>
   );
 }

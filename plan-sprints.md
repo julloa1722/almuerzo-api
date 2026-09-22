@@ -3249,3 +3249,113 @@ La revisión se ejecutó en segundo plano y se detuvo sola antes de completar su
 última dimensión —exactitud de `GUIA-DESPLIEGUE.md`—, que por tanto **no tiene
 veredicto**. Las otras tres sí reportaron. Queda anotado para no dar por
 revisado algo que no lo fue.
+
+---
+
+## Sprint 21 — El plato como portada: identidad en las pantallas públicas
+
+**Estado: documentado y construido el 22 de septiembre de 2026, pendiente de
+confirmación del usuario.**
+
+**Objetivo:** que lo primero que ve alguien al abrir la plataforma comunique qué
+es y se vea terminado, sin traicionar el lenguaje sobrio del Sprint 10.
+
+**Por qué ahora:** la plataforma está en internet y se le va a enseñar a un
+cliente. El login era un formulario de 384px flotando en una pantalla vacía, sin
+marca, sin decir qué es el producto, y con el título de pestaña
+`Almuerzo — mi app` —texto de plantilla que el cliente ve en el navegador y al
+compartir el enlace.
+
+### Cómo se eligió la dirección
+
+Se prepararon dos rondas de mockups navegables. La primera ofrecía tres
+direcciones (círculos de color al estilo Fripick, panel dividido, y curvas); el
+usuario eligió los círculos y pidió movimiento. La segunda ronda entregó tres
+tratamientos de movimiento sobre esa base — y al verla, **el usuario cambió de
+criterio con buen ojo**: los círculos de colores eran Fripick con otros tonos,
+y pidió alejarse, usar un plato de comida, y volver a la sobriedad de las
+pantallas internas.
+
+La tercera ronda es la que se construyó. De sus tres opciones el usuario eligió
+la del **menú rotatorio**, con una condición explícita: **ilustraciones fijas,
+sin llamar al backend.** El login no hace ni una petición extra.
+
+Queda registrado porque la decisión intermedia —descartar lo que ya se había
+elegido— es la que salvó el diseño.
+
+### Restricción de diseño, explícita
+
+El lenguaje visual viene portado 1:1 desde `mockup-plataforma-almuerzo.html`.
+"Más vistoso" **no** significó degradados, sombras de colores ni fotos de banco:
+significó usar mejor el espacio y los tokens que ya existen. No se agregó ni un
+color nuevo a `tailwind.config.js`.
+
+La única adición tipográfica es **IBM Plex Serif** en dos pesos, hermana de la
+Sans que ya se usaba y diseñada para acompañarla. Se emplea en dos sitios
+contados (el titular de la escena y el encabezado del formulario); todo lo demás
+sigue en Sans.
+
+### Subsprint 21.1 — Marca
+
+Componente `Marca`: símbolo propio en SVG inline —una campana de servir sobre su
+bandeja, legible a 20px, de un solo color, sin dependencias— y el nombre en IBM
+Plex. Corregido también el `<title>` de `index.html`.
+
+### Subsprint 21.2 — La escena del plato
+
+`EscenaPlato`: un plato dibujado a línea con los cubiertos, que rota cada 4,2
+segundos entre cuatro almuerzos ilustrados a mano (pollo guisado, pescado al
+horno, res encebollada, vegetariano), con transición cruzada, el nombre del
+plato debajo y puntos de posición.
+
+**Todo es SVG en el bundle, sin peticiones.** Se evaluó alimentarlo del menú
+real (`GET /pedidos/menu-disponible`) y se descartó a pedido del usuario: ese
+endpoint exige sesión, abrirlo al público es una decisión de seguridad aparte, y
+el login no debe cargar nada que no necesite para dejar entrar a alguien.
+
+### Subsprint 21.3 — Layout público compartido
+
+`LayoutPublico`: escena a la izquierda sobre `paper`, contenido a la derecha
+sobre blanco. En pantallas chicas se apila, con la escena arriba y reducida para
+no empujar el formulario fuera de la vista.
+
+Se extrae como componente porque las **cuatro** pantallas públicas —login,
+olvidé mi contraseña, restablecer, aceptar invitación— deben verse iguales. Un
+cliente que abre un enlace de invitación y cae en una pantalla con otro aspecto
+nota el remiendo.
+
+### Subsprint 21.4 — Afordancias del formulario
+
+- `autoComplete` en correo y contraseña. Sin esto los gestores no rellenan, que
+  en el teléfono es la diferencia entre entrar de un toque o teclear todo.
+- `autoFocus` en el correo, `inputMode` y sin autocapitalización en el email.
+- Botón de mostrar/ocultar contraseña.
+- Realce del campo enfocado: fondo blanco, borde verde y la etiqueta teñida.
+
+### Subsprint 21.5 — Selección de ámbito
+
+La pantalla que aparece cuando un usuario tiene varias membresías mostraba
+botones con un `<br>` dentro y el rol en gris diminuto. Pasa a tarjetas con el
+nombre de la entidad como texto principal y el rol como insignia.
+
+### Accesibilidad
+
+Todo el movimiento respeta `prefers-reduced-motion`: a quien la tenga activada
+se le sirve un plato fijo, sin rotación ni transiciones, sin perder información
+—el nombre del plato y los puntos siguen ahí.
+
+### Criterio de cierre
+
+El usuario abre el login en escritorio y en el teléfono, ve el plato rotar,
+entra, y confirma. Con un usuario de varias membresías, la pantalla de elegir
+ámbito también.
+
+### Fuera de alcance (a propósito)
+
+- **Las nueve pantallas internas.** Solo cambian las públicas. Es deliberado:
+  alegre por fuera, eficiente por dentro.
+- **Modo oscuro.** No lo pidió nadie y duplicaría el trabajo de tokens.
+- **Fotografía.** Las imágenes de la referencia son de banco y habría que
+  licenciarlas. La ilustración propia pesa menos y no envejece igual.
+- **El nombre del producto.** Sigue siendo "Almuerzo", de relleno. Es una
+  decisión de negocio, no de diseño, y está anotada como pendiente.

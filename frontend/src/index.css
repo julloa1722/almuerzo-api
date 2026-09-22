@@ -110,6 +110,50 @@ body {
     @apply border-ink-3 bg-white outline-none;
   }
 
+  /* ---------- Pantallas públicas (Sprint 21) ----------
+     `.entrada` envuelve el input para poder meterle el botón del ojo dentro
+     del mismo borde. El realce al enfocar es más marcado que en el resto de
+     la app a propósito: es la única pantalla donde alguien escribe a ciegas
+     una contraseña, muchas veces desde el teléfono. */
+  .entrada {
+    @apply flex items-center gap-2 bg-paper border border-rule rounded px-3 py-2.5;
+    transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  }
+  .entrada input {
+    @apply flex-1 min-w-0 border-0 bg-transparent p-0 text-[14px];
+  }
+  .entrada input:focus {
+    @apply border-0 bg-transparent;
+  }
+  .entrada:focus-within {
+    @apply bg-white border-verde;
+    box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.13);
+  }
+  .campo:focus-within > label {
+    @apply text-verde;
+  }
+  .entrada .ojo {
+    @apply flex-none grid place-items-center bg-transparent border-0 p-0 cursor-pointer;
+  }
+
+  /* Tarjetas de selección de ámbito, cuando alguien tiene varias membresías. */
+  .ambito {
+    @apply w-full text-left border border-rule rounded bg-card px-3.5 py-3 flex items-center justify-between gap-3 transition-colors;
+  }
+  .ambito:hover {
+    @apply border-verde bg-verde-bg;
+  }
+  .ambito:disabled {
+    @apply opacity-40 cursor-not-allowed;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .entrada,
+    .ambito {
+      transition: none;
+    }
+  }
+
   .subnav {
     @apply flex gap-1 flex-wrap mb-4 border-b border-rule;
   }

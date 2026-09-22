@@ -28,6 +28,8 @@ export default {
       fontFamily: {
         sans: ['"IBM Plex Sans"', 'system-ui', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'monospace'],
+        // Sprint 21 — solo para las pantallas públicas. Ver index.html.
+        serif: ['"IBM Plex Serif"', 'Georgia', 'serif'],
       },
       borderRadius: {
         DEFAULT: '6px',

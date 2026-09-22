@@ -2,8 +2,11 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { apiRequest, ApiError } from '../lib/api';
 import { Aviso } from '../components/Aviso';
+import { LayoutPublico } from '../components/LayoutPublico';
+import { CampoPassword } from '../components/CampoPassword';
 
-/** Sprint 19, subsprint 19.2. Pública, fuera de ProtectedRoute. */
+/** Sprint 19, subsprint 19.2. Pública, fuera de ProtectedRoute.
+ *  Sprint 21: marco público compartido y campos con mostrar/ocultar. */
 export function RestablecerPasswordPage() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
@@ -35,35 +38,41 @@ export function RestablecerPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="card max-w-[420px] w-full">
-        <h2>Nueva contraseña</h2>
+    <LayoutPublico>
+      <h2 className="font-serif text-[23px] font-semibold tracking-[-0.01em] m-0">
+        Nueva contraseña
+      </h2>
 
-        {error && <Aviso tipo="no">{error}</Aviso>}
+      {error && <Aviso tipo="no">{error}</Aviso>}
 
-        {listo ? (
-          <div>
-            <Aviso tipo="si">Contraseña actualizada. Ya puedes iniciar sesión con la nueva.</Aviso>
-            <button className="btn mt-3" onClick={() => navigate('/login', { replace: true })}>
-              Ir a iniciar sesión
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="campo">
-              <label>Contraseña nueva (mínimo 8 caracteres)</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-            </div>
-            <div className="campo">
-              <label>Repite la contraseña</label>
-              <input type="password" value={confirmar} onChange={(e) => setConfirmar(e.target.value)} />
-            </div>
-            <button className="btn" disabled={cargando} onClick={restablecer}>
-              {cargando ? 'Guardando…' : 'Guardar y continuar'}
-            </button>
-          </>
-        )}
-      </div>
-    </div>
+      {listo ? (
+        <>
+          <Aviso tipo="si">Contraseña actualizada. Ya puedes iniciar sesión con la nueva.</Aviso>
+          <button className="btn btn-ok w-full" onClick={() => navigate('/login', { replace: true })}>
+            Ir a iniciar sesión
+          </button>
+        </>
+      ) : (
+        <div className="flex flex-col gap-3.5">
+          <CampoPassword
+            id="pass-nueva"
+            etiqueta="Contraseña nueva (mínimo 8 caracteres)"
+            valor={password}
+            onChange={setPassword}
+            autoComplete="new-password"
+          />
+          <CampoPassword
+            id="pass-repetir"
+            etiqueta="Repite la contraseña"
+            valor={confirmar}
+            onChange={setConfirmar}
+            autoComplete="new-password"
+          />
+          <button className="btn btn-ok w-full" disabled={cargando} onClick={restablecer}>
+            {cargando ? 'Guardando…' : 'Guardar y continuar'}
+          </button>
+        </div>
+      )}
+    </LayoutPublico>
   );
 }

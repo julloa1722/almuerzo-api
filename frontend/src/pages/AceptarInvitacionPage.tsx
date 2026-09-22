@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../auth/AuthContext';
 import { apiRequest, ApiError } from '../lib/api';
 import { Aviso } from '../components/Aviso';
+import { LayoutPublico } from '../components/LayoutPublico';
+import { CampoPassword } from '../components/CampoPassword';
 import type { AmbitoResponse } from '../types';
 
 interface InvitacionInfo {
@@ -82,60 +84,68 @@ export function AceptarInvitacionPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <LayoutPublico>
         <div className="text-sm text-muted">Cargando…</div>
-      </div>
+      </LayoutPublico>
     );
   }
 
   if (!info || !info.vigente) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="card max-w-[420px]">
-          <h2>Invitación no disponible</h2>
-          <p className="text-[13.5px] text-muted mt-1">
-            Este enlace ya no es válido — puede que ya lo hayas usado, que haya vencido, o que te lo hayan
-            revocado. Pide que te envíen uno nuevo.
-          </p>
-        </div>
-      </div>
+      <LayoutPublico>
+        <h2 className="font-serif text-[23px] font-semibold tracking-[-0.01em] m-0">
+          Invitación no disponible
+        </h2>
+        <p className="text-[13.5px] text-muted m-0">
+          Este enlace ya no es válido — puede que ya lo hayas usado, que haya vencido, o que te lo
+          hayan revocado. Pide que te envíen uno nuevo.
+        </p>
+      </LayoutPublico>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="card max-w-[420px] w-full">
-        <h2>{cuentaExistente ? 'Confirma la invitación' : 'Activa tu cuenta'}</h2>
-        <p className="text-[13.5px] text-muted mt-1 mb-4">
-          Te invitaron como <b>{ROL_ETIQUETA[info.rol] ?? info.rol}</b> de <b>{info.nombre_ambito}</b>.{' '}
-          {cuentaExistente ? (
-            <>
-              <span className="mono">{info.email}</span> ya tiene una cuenta, así que escribe tu contraseña
-              actual para confirmar que eres tú.
-            </>
-          ) : (
-            <>
-              Define una contraseña para <span className="mono">{info.email}</span>.
-            </>
-          )}
-        </p>
-
-        {error && <Aviso tipo="no">{error}</Aviso>}
-
-        <div className="campo">
-          <label>{cuentaExistente ? 'Tu contraseña actual' : 'Contraseña (mínimo 8 caracteres)'}</label>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        </div>
-        {!cuentaExistente && (
-          <div className="campo">
-            <label>Repite la contraseña</label>
-            <input type="password" value={confirmar} onChange={(e) => setConfirmar(e.target.value)} />
-          </div>
+    <LayoutPublico>
+      <h2 className="font-serif text-[23px] font-semibold tracking-[-0.01em] m-0">
+        {cuentaExistente ? 'Confirma la invitación' : 'Activa tu cuenta'}
+      </h2>
+      <p className="text-[13.5px] text-muted m-0 -mt-2">
+        Te invitaron como <b>{ROL_ETIQUETA[info.rol] ?? info.rol}</b> de <b>{info.nombre_ambito}</b>.{' '}
+        {cuentaExistente ? (
+          <>
+            <span className="mono">{info.email}</span> ya tiene una cuenta, así que escribe tu
+            contraseña actual para confirmar que eres tú.
+          </>
+        ) : (
+          <>
+            Define una contraseña para <span className="mono">{info.email}</span>.
+          </>
         )}
-        <button className="btn" disabled={cargando} onClick={aceptar}>
+      </p>
+
+      {error && <Aviso tipo="no">{error}</Aviso>}
+
+      <div className="flex flex-col gap-3.5">
+        <CampoPassword
+          id="inv-pass"
+          etiqueta={cuentaExistente ? 'Tu contraseña actual' : 'Contraseña (mínimo 8 caracteres)'}
+          valor={password}
+          onChange={setPassword}
+          autoComplete={cuentaExistente ? 'current-password' : 'new-password'}
+        />
+        {!cuentaExistente && (
+          <CampoPassword
+            id="inv-pass-2"
+            etiqueta="Repite la contraseña"
+            valor={confirmar}
+            onChange={setConfirmar}
+            autoComplete="new-password"
+          />
+        )}
+        <button className="btn btn-ok w-full" disabled={cargando} onClick={aceptar}>
           {cargando ? 'Activando…' : cuentaExistente ? 'Confirmar y entrar' : 'Activar cuenta y entrar'}
         </button>
       </div>
-    </div>
+    </LayoutPublico>
   );
 }
